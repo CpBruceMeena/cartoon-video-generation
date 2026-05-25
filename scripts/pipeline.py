@@ -31,6 +31,8 @@ DEFAULT_DURATION_FRAMES = 72  # ~3 seconds fallback
 
 VOICEBOX_URL = "http://127.0.0.1:17493"
 
+PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes — pipeline fails if it exceeds this
+
 # Character voice profile mappings
 VOICE_MAP = {
     "shinchan": {
@@ -75,6 +77,17 @@ BACKGROUND_MAP = {
     "school": "House",
     "classroom": "House",
 }
+
+
+def check_timeout(start_time: float, stage: str = ""):
+    """Check if pipeline has exceeded the global timeout and exit if so."""
+    if not start_time:
+        return
+    elapsed = time.time() - start_time
+    if elapsed > PIPELINE_TIMEOUT_SECONDS:
+        print(f"\n⏰ Pipeline timeout ({int(elapsed)}s > {PIPELINE_TIMEOUT_SECONDS}s limit) — {stage}")
+        print("   Increase PIPELINE_TIMEOUT_SECONDS in scripts/pipeline.py if needed.")
+        sys.exit(1)
 
 
 def normalize_name(name: str) -> str:
@@ -259,7 +272,7 @@ def generate_voice(text: str, profile_id: str, engine: str = "kokoro", index: in
         return None
 
 
-def process_script(script_data: dict, script_name: str) -> dict | None:
+def process_script(script_data: dict, script_name: str, start_time: float = 0) -> dict | None:
     """Process script: generate audio, compute timings, create script.json."""
     global_frame = 0
     total_duration = 0
@@ -280,6 +293,7 @@ def process_script(script_data: dict, script_name: str) -> dict | None:
 
             # Generate voice via Voicebox
             if voice_config.get("profile_id"):
+                check_timeout(start_time, f"Generating voice for {line['speaker']}")
                 print(f"  🔊 Generating voice for {line['speaker']}: \"{line['text'][:50]}...\"")
                 audio_bytes = generate_voice(
                     text=line["text"],
@@ -382,6 +396,8 @@ def main():
     script_path = script_files[0]
     print(f"\n📄 Processing script: {script_path.name}")
 
+    start_time = time.time()
+
     # Clean old files
     cleanup()
 
@@ -396,7 +412,7 @@ def main():
 
     # Process: generate audio + compute timings
     print(f"\n🎤 Generating voices...")
-    result = process_script(script_data, script_path.stem)
+    result = process_script(script_data, script_path.stem, start_time)
     if not result:
         print("❌ Failed to process script")
         sys.exit(1)
@@ -413,6 +429,9 @@ def main():
     src_script = PROJECT_ROOT / "src" / "script.json"
     src_script.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"  ✅ Copied script.json to src/")
+
+    # Check timeout before render
+    check_timeout(start_time, "Rendering video")
 
     # Render video
     render_video(result)
