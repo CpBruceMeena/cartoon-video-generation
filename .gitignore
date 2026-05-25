@@ -1,0 +1,13 @@
+node_modules/
+out/
+.remotion/
+.DS_Store
+.env
+
+.code_review_graph/
+code-review-graph-cache/
+crg-cache/
+.cache/code-review-graph/
+.cache/crg/
+*.crg
+.code-review-graph/
