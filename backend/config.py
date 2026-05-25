@@ -39,10 +39,10 @@ PIPELINE_TIMEOUT_SECONDS = 600
 # NOT sent in the API payload. Create new profiles to switch engines.
 
 VOICE_MAP: dict[str, dict] = {
-    "shinchan":  {"profile_id": "c3832bff-5bed-483b-8f58-206df52d01e3"},
-    "doraemon":  {"profile_id": "597882d1-81ce-4712-9e58-89a226903e0a"},
-    "nobita":    {"profile_id": "a58b10f6-ee8a-41af-965b-1b223e1b30d1"},
-    "misae":     {"profile_id": "216bb8dd-badd-49ae-ac4d-ad82bc61f26b"},
+    "shinchan":  {"profile_id": "30140e32-8286-40af-b899-d2941f1f97eb"},
+    "doraemon":  {"profile_id": "4b5958cb-1bef-4a99-97bc-12463e798c04"},
+    "nobita":    {"profile_id": "b1407014-9e3f-4a49-8b86-fcf9bec0fee2"},
+    "misae":     {"profile_id": "cfc98b74-d3c2-419a-a253-80f224c4c116"},
     "shiro":     {},
     "chibifox":  {},
     "dog":       {},

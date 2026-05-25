@@ -9,6 +9,7 @@ frontend/node_modules/
 frontend/out/
 frontend/.remotion/
 frontend/public/audio/*.mp3
+frontend/public/audio/*.wav
 frontend/public/images/*.png
 frontend/public/cartoon_characters/
 frontend/src/script.json

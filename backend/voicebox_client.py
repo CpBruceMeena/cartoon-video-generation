@@ -91,7 +91,7 @@ def voicebox_preflight(dialogue_count: int) -> float:
     print(f"   ⏱️  Testing generation speed (sending sample phrase)...")
     test_payload = {
         "text": "Hello, this is a test.",
-        "profile_id": "c3832bff-5bed-483b-8f58-206df52d01e3",
+        "profile_id": "30140e32-8286-40af-b899-d2941f1f97eb",
         "language": "en",
     }
     try:
@@ -138,7 +138,8 @@ def _poll_generation(gen_id: str, poll_timeout: int = 60) -> bytes | None:
     """Poll voice generation status via SSE and return audio bytes.
 
     Uses a single persistent SSE connection that streams status changes
-    in real-time — no reconnect loop needed.
+    in real-time — no reconnect loop needed. When complete, downloads
+    audio from the /audio/{gen_id} endpoint.
     """
     try:
         status_resp = requests.get(
@@ -157,12 +158,15 @@ def _poll_generation(gen_id: str, poll_timeout: int = 60) -> bytes | None:
                 decoded = event_line.decode("utf-8")
                 if decoded.startswith("data: "):
                     event_data = json.loads(decoded[6:])
-                    if event_data.get("status") == "complete":
-                        audio_url = event_data.get("audio_url") or event_data.get("url")
-                        if audio_url:
-                            audio_resp = requests.get(audio_url, timeout=30)
-                            if audio_resp.status_code == 200:
-                                return audio_resp.content
+                    if event_data.get("status") == "completed":
+                        # Audio is available at /audio/{gen_id}
+                        audio_resp = requests.get(
+                            f"{VOICEBOX_URL}/audio/{gen_id}", timeout=30
+                        )
+                        if audio_resp.status_code == 200:
+                            return audio_resp.content
+                        print(f"  ⚠️  Audio download returned {audio_resp.status_code}")
+                        return None
                     elif event_data.get("status") in ("failed", "error"):
                         print(f"  ⚠️  Generation failed: {event_data.get('error', 'unknown error')}")
                         return None

@@ -73,7 +73,8 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
             speaker_norm = normalize_name(line["speaker"])
             voice_config = VOICE_MAP.get(speaker_norm, {})
 
-            audio_filename = f"{speaker_norm}_{all_dialogue_count:03d}.mp3"
+            # Voicebox returns WAV audio; the filename extension must match
+            audio_filename = f"{speaker_norm}_{all_dialogue_count:03d}.wav"
             audio_path = AUDIO_DIR / audio_filename
 
             if voice_config.get("profile_id"):
@@ -163,7 +164,7 @@ def cleanup():
     """Clean up old generated files."""
     print("🧹 Cleaning old generated files...")
 
-    for f in AUDIO_DIR.glob("*.mp3"):
+    for f in list(AUDIO_DIR.glob("*.wav")) + list(AUDIO_DIR.glob("*.mp3")):
         f.unlink()
     print(f"  ✅ Cleaned audio files")
 
