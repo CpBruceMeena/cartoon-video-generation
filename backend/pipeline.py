@@ -1,275 +1,62 @@
 #!/usr/bin/env python3
 
 """
-Video Generation Pipeline for Remotion
-- Reads script from script_files/
-- Generates character voices via Voicebox (localhost:17493)
-- Outputs script.json with precise frame timings
-- Triggers Remotion render
+Remotion Video Pipeline — main orchestration entry point.
+
+Reads a markdown script → generates voices via Voicebox TTS →
+computes frame timings → saves script.json → triggers Remotion render.
+
+Usage:
+    python backend/pipeline.py
 """
 
 import json
-import os
-import re
 import shutil
+import struct
 import subprocess
 import sys
 import time
-import requests
+import wave
 from pathlib import Path
 
-# ─── Configuration ────────────────────────────────────────────────────────────
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT_DIR = PROJECT_ROOT / "scripts"
-AUDIO_DIR = PROJECT_ROOT / "public" / "audio"
-OUTPUT_VIDEO_DIR = PROJECT_ROOT / "videos" / "renders"
-OUTPUT_SCRIPT_DIR = PROJECT_ROOT / "output" / "scripts"
-PROCESSED_SCRIPT_DIR = PROJECT_ROOT / "processed" / "scripts"
+# Ensure the project root is on sys.path (for `python backend/pipeline.py`)
+_project_root = str(Path(__file__).resolve().parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-FPS = 24
-DEFAULT_DURATION_FRAMES = 72  # ~3 seconds fallback
+from backend.config import (
+    AUDIO_DIR,
+    IMAGE_DIR,
+    FRONTEND_DIR,
+    OUTPUT_VIDEO_DIR,
+    OUTPUT_SCRIPT_DIR,
+    PROCESSED_SCRIPT_DIR,
+    SCRIPTS_DIR,
+    PROJECT_ROOT,
+    FPS,
+    DEFAULT_DURATION_FRAMES,
+    VOICE_MAP,
+    PIPELINE_TIMEOUT_SECONDS,
+)
+from backend.script_parser import parse_script, normalize_name
+from backend.voicebox_client import generate_voice, voicebox_preflight
+from backend.audio_utils import get_audio_duration
 
-VOICEBOX_URL = "http://127.0.0.1:17493"
 
-PIPELINE_TIMEOUT_SECONDS = 1800  # 30 minutes — pipeline fails if it exceeds this
-
-# Character voice profile mappings
-VOICE_MAP = {
-    "shinchan": {
-        "profile_id": "c3832bff-5bed-483b-8f58-206df52d01e3",
-        "engine": "kokoro",
-    },
-    "doraemon": {
-        "profile_id": "597882d1-81ce-4712-9e58-89a226903e0a",
-        "engine": "kokoro",
-    },
-    "nobita": {
-        "profile_id": "a58b10f6-ee8a-41af-965b-1b223e1b30d1",
-        "engine": "kokoro",
-    },
-    "misae": {
-        "profile_id": "216bb8dd-5445-4c91-8439-7ecb0d4ff394",
-        "engine": "kokoro",
-    },
-    "shiro": {},
-    "chibifox": {},
-    "dog": {},
-    "rayne": {},
-    "schoolgirl": {},
-    "scientist": {},
-    "villain": {},
-}
-
-# Background keyword mapping
-BACKGROUND_MAP = {
-    "sunset rooftop": "SunsetRooftop",
-    "rooftop": "SunsetRooftop",
-    "sunset": "SunsetRooftop",
-    "house": "House",
-    "living room": "House",
-    "interior": "House",
-    "kitchen": "House",
-    "bedroom": "House",
-    "street": "Street",
-    "outside": "Street",
-    "city": "Street",
-    "park": "Street",
-    "school": "House",
-    "classroom": "House",
-}
+# ─── Helpers ────────────────────────────────────────────────────────────────
 
 
 def check_timeout(start_time: float, stage: str = ""):
-    """Check if pipeline has exceeded the global timeout and exit if so."""
+    """Exit if the pipeline has exceeded its global timeout."""
     if not start_time:
         return
     elapsed = time.time() - start_time
     if elapsed > PIPELINE_TIMEOUT_SECONDS:
         print(f"\n⏰ Pipeline timeout ({int(elapsed)}s > {PIPELINE_TIMEOUT_SECONDS}s limit) — {stage}")
-        print("   Increase PIPELINE_TIMEOUT_SECONDS in scripts/pipeline.py if needed.")
         sys.exit(1)
 
 
-def normalize_name(name: str) -> str:
-    """Normalize character name for lookups."""
-    return name.lower().strip().replace(" ", "")
-
-
-def detect_background(scene_title: str, dialogue_text: str = "") -> str:
-    """Detect background from scene title and dialogue."""
-    combined = f"{scene_title} {dialogue_text}".lower()
-    for keyword, bg in BACKGROUND_MAP.items():
-        if keyword in combined:
-            return bg
-    return "Street"
-
-
-def parse_expression(text: str) -> str:
-    """Infer expression from dialogue text."""
-    t = text.lower()
-    if "!!" in text or "!?" in text:
-        return "shocked"
-    if "angry" in t or "mad" in t or "furious" in t or "annoyed" in t:
-        return "angry"
-    if "happy" in t or "yay" in t or "woohoo" in t or "amazing" in t or "love" in t:
-        return "happy"
-    if "shocked" in t or "what" in t or "surprised" in t or "wow" in t or "really?" in t:
-        return "shocked"
-    if t.endswith("!") and len(t) < 30:
-        return "shocked"
-    if "..." in t or "hmm" in t or "maybe" in t:
-        return "normal"
-    return "normal"
-
-
-def parse_script(filepath: Path) -> dict:
-    """Parse a markdown script into structured scene/dialogue data."""
-    content = filepath.read_text(encoding="utf-8")
-
-    scenes = []
-    current_scene = None
-
-    # Try Format A: ## Scene Title / ### Speaker
-    # Try Format B: # SCENE 1 — Title / ### Speaker
-    lines = content.split("\n")
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-
-        # Detect scene headers - ## or # SCENE
-        scene_match = re.match(r"^##\s+(.+)$", line)
-        if not scene_match:
-            scene_match = re.match(r"^#\s+(SCENE\s+\d+.*)$", line, re.IGNORECASE)
-        if not scene_match:
-            scene_match = re.match(r"^#\s+(.+)$", line)
-
-        if scene_match:
-            # Save previous scene
-            if current_scene and current_scene.get("dialogue"):
-                scenes.append(current_scene)
-
-            scene_title = scene_match.group(1).strip()
-            current_scene = {
-                "id": f"scene_{len(scenes) + 1:02d}",
-                "title": scene_title,
-                "background": detect_background(scene_title),
-                "dialogue": [],
-            }
-            i += 1
-            continue
-
-        # Detect speaker lines - ### SpeakerName
-        speaker_match = re.match(r"^###\s+(.+)$", line)
-        if speaker_match and current_scene is not None:
-            speaker = speaker_match.group(1).strip()
-
-            # Collect all text lines until next ### or ## or end
-            i += 1
-            text_parts = []
-            while i < len(lines):
-                next_line = lines[i].strip()
-                if next_line.startswith("### ") or next_line.startswith("## ") or re.match(r"^#\s+", next_line):
-                    break
-                # Skip empty lines, sound effects in parentheses, markdown formatting
-                if next_line and not next_line.startswith("(") and not next_line.startswith("```"):
-                    text_parts.append(next_line)
-                i += 1
-
-            text = " ".join(text_parts).strip()
-            if text:
-                current_scene["dialogue"].append({
-                    "speaker": speaker,
-                    "expression": parse_expression(text),
-                    "text": text,
-                })
-            continue
-
-        i += 1
-
-    # Save last scene
-    if current_scene and current_scene.get("dialogue"):
-        scenes.append(current_scene)
-
-    return {"scenes": scenes}
-
-
-def get_audio_duration(filepath: Path) -> float:
-    """Get audio duration in seconds using mutagen or fallback."""
-    try:
-        from mutagen.mp3 import MP3
-        audio = MP3(str(filepath))
-        if audio.info and audio.info.length:
-            return audio.info.length
-    except Exception:
-        pass
-
-    # Fallback: estimate from file size (rough: ~16KB per second for 128kbps MP3)
-    size = filepath.stat().st_size
-    estimated_seconds = size / 16000
-    if estimated_seconds > 0.3:
-        return estimated_seconds
-
-    # Last resort
-    return 3.0
-
-
-def generate_voice(text: str, profile_id: str, engine: str = "kokoro", index: int = 0) -> bytes | None:
-    """Generate voice audio via Voicebox API. Returns audio bytes."""
-    payload = {
-        "text": text,
-        "profile_id": profile_id,
-        "engine": engine,
-        "language": "en",
-    }
-
-    try:
-        resp = requests.post(f"{VOICEBOX_URL}/generate", json=payload, timeout=60)
-        if resp.status_code != 200:
-            print(f"  ⚠️  Voicebox returned status {resp.status_code}: {resp.text[:100]}")
-            return None
-
-        data = resp.json()
-        gen_id = data.get("id")
-        if not gen_id:
-            print(f"  ⚠️  No generation ID returned")
-            return None
-
-        # Poll for completion
-        for attempt in range(60):
-            status_resp = requests.get(
-                f"{VOICEBOX_URL}/generate/{gen_id}/status",
-                stream=True,
-                timeout=30,
-            )
-            if status_resp.status_code == 200:
-                content_type = status_resp.headers.get("content-type", "")
-                if "audio" in content_type or "octet" in content_type:
-                    return status_resp.content
-                # Parse SSE event stream
-                for event_line in status_resp.iter_lines():
-                    if not event_line:
-                        continue
-                    decoded = event_line.decode("utf-8")
-                    if decoded.startswith("data: "):
-                        event_data = json.loads(decoded[6:])
-                        if event_data.get("status") == "complete":
-                            audio_url = event_data.get("audio_url") or event_data.get("url")
-                            if audio_url:
-                                audio_resp = requests.get(audio_url, timeout=30)
-                                if audio_resp.status_code == 200:
-                                    return audio_resp.content
-            time.sleep(1)
-
-        print(f"  ⚠️  Timed out waiting for voice generation")
-        return None
-
-    except requests.exceptions.ConnectionError:
-        print(f"  ❌ Cannot connect to Voicebox at {VOICEBOX_URL}")
-        print(f"     Make sure Voicebox is running: https://github.com/jamiepine/voicebox")
-        return None
-    except Exception as e:
-        print(f"  ⚠️  Voice generation error: {e}")
-        return None
+# ─── Processing ─────────────────────────────────────────────────────────────
 
 
 def process_script(script_data: dict, script_name: str, start_time: float = 0) -> dict | None:
@@ -287,19 +74,15 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
             speaker_norm = normalize_name(line["speaker"])
             voice_config = VOICE_MAP.get(speaker_norm, {})
 
-            # Generate audio filename
             audio_filename = f"{speaker_norm}_{all_dialogue_count:03d}.mp3"
             audio_path = AUDIO_DIR / audio_filename
 
-            # Generate voice via Voicebox
             if voice_config.get("profile_id"):
                 check_timeout(start_time, f"Generating voice for {line['speaker']}")
                 print(f"  🔊 Generating voice for {line['speaker']}: \"{line['text'][:50]}...\"")
                 audio_bytes = generate_voice(
                     text=line["text"],
                     profile_id=voice_config["profile_id"],
-                    engine=voice_config.get("engine", "kokoro"),
-                    index=all_dialogue_count,
                 )
                 if audio_bytes:
                     audio_path.write_bytes(audio_bytes)
@@ -308,9 +91,11 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
                     print(f"     ✅ Generated ({duration_sec:.1f}s / {duration_frames} frames)")
                 else:
                     duration_frames = DEFAULT_DURATION_FRAMES
-                    print(f"     ⚠️  Voice generation failed, using {duration_frames} frames")
+                    # Write a silent WAV placeholder so Remotion doesn't 404 on the audio file
+                    _write_silent_wav(audio_path, duration_sec=duration_frames / FPS)
+                    print(f"     ⚠️  Voice generation failed, wrote silent audio ({duration_frames} frames)")
             else:
-                duration_sec = len(line["text"]) / 10  # rough estimate: ~0.1s per char
+                duration_sec = len(line["text"]) / 10
                 duration_frames = max(24, int(duration_sec * FPS))
                 print(f"  ⏩ No voice profile for {line['speaker']}, using estimated {duration_frames} frames")
 
@@ -331,22 +116,23 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
     }
 
 
+# ─── Render ─────────────────────────────────────────────────────────────────
+
+
 def render_video(script_data: dict) -> bool:
     """Trigger Remotion render using the generated script.json."""
     print("\n🎬 Rendering video with Remotion...")
 
-    # Save script.json to src/ for Remotion to read
-    script_json_path = PROJECT_ROOT / "src" / "script.json"
+    script_json_path = FRONTEND_DIR / "src" / "script.json"
     script_json_path.write_text(json.dumps(script_data, indent=2), encoding="utf-8")
     print(f"  ✅ Saved script.json to {script_json_path}")
 
-    # Build the render command
     result = subprocess.run(
         ["npx", "remotion", "render", "src/index.ts", "DynamicVideo", "--overwrite"],
-        cwd=str(PROJECT_ROOT),
+        cwd=str(FRONTEND_DIR),
         capture_output=True,
         text=True,
-        timeout=600,
+        timeout=300,
     )
 
     if result.returncode == 0:
@@ -358,21 +144,84 @@ def render_video(script_data: dict) -> bool:
         return False
 
 
+# ─── Cleanup ────────────────────────────────────────────────────────────────
+
+
+def _write_silent_wav(path: Path, duration_sec: float = 3.0) -> None:
+    """Write a silent WAV file as placeholder when voice generation fails.
+    This ensures Remotion can find the audio file and won't 404 during render.
+    """
+    sample_rate = 22050
+    num_samples = int(sample_rate * duration_sec)
+    with wave.open(str(path), "w") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(b"\x00" * num_samples * 2)
+
+
 def cleanup():
     """Clean up old generated files."""
     print("🧹 Cleaning old generated files...")
 
-    # Clean audio
     for f in AUDIO_DIR.glob("*.mp3"):
         f.unlink()
     print(f"  ✅ Cleaned audio files")
 
-    # Clean script.json
-    for p in [PROJECT_ROOT / "src" / "script.json", PROJECT_ROOT / "public" / "script.json"]:
+    if IMAGE_DIR.exists():
+        for f in IMAGE_DIR.glob("*.png"):
+            f.unlink()
+        print(f"  ✅ Cleaned generated images")
+
+    for p in [FRONTEND_DIR / "src" / "script.json", FRONTEND_DIR / "public" / "script.json"]:
         if p.exists():
             p.unlink()
-
     print(f"  ✅ Cleaned script.json")
+
+
+# ─── Image Generation (optional) ────────────────────────────────────────────
+
+
+def generate_background_images(script_data: dict) -> dict:
+    """Generate placeholder background images via MuapiClient sandbox."""
+    client = _get_muapi_client()
+    if client is None:
+        print("  ⚠️  MuapiClient not available — skipping image generation")
+        return {}
+
+    seen = set()
+    for scene in script_data.get("scenes", []):
+        bg = scene.get("background", "Street")
+        seen.add(bg)
+
+    if not seen:
+        return {}
+
+    print(f"\n🖼️  Generating placeholder background images ({len(seen)} unique scenes)...")
+    bg_map = {}
+    for bg_name in sorted(seen):
+        output_path = str(IMAGE_DIR / f"{bg_name}.png")
+        prompt = f"Scene background for {bg_name}, anime style"
+        try:
+            result = client.generate_image(prompt=prompt, output_path=output_path)
+            bg_map[bg_name] = result
+        except Exception as e:
+            print(f"  ⚠️  Failed to generate {bg_name}: {e}")
+
+    print(f"  ✅ Generated {len(bg_map)} background images")
+    return bg_map
+
+
+def _get_muapi_client():
+    """Lazy-init MuapiClient in sandbox mode (free, no API key)."""
+    try:
+        from skills.lib.muapi_client import MuapiClient
+        return MuapiClient(mode="sandbox")
+    except ImportError:
+        return None
+
+
+# ─── Main ───────────────────────────────────────────────────────────────────
 
 
 def main():
@@ -387,10 +236,10 @@ def main():
     PROCESSED_SCRIPT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Find script file
-    script_files = list(SCRIPT_DIR.glob("*.md"))
+    script_files = sorted(SCRIPTS_DIR.glob("*.md"))
     if not script_files:
-        print(f"❌ No script files found in {SCRIPT_DIR}")
-        print(f"   Add a .md script file to script_files/ and try again.")
+        print(f"❌ No script files found in {SCRIPTS_DIR}")
+        print(f"   Add a .md script file to scripts/ and try again.")
         sys.exit(1)
 
     script_path = script_files[0]
@@ -398,10 +247,9 @@ def main():
 
     start_time = time.time()
 
-    # Clean old files
     cleanup()
 
-    # Parse script
+    # Parse
     print(f"\n📝 Parsing script...")
     script_data = parse_script(script_path)
     print(f"   Found {len(script_data['scenes'])} scenes")
@@ -410,7 +258,13 @@ def main():
     for s in script_data["scenes"]:
         print(f"     • {s['title']} ({len(s['dialogue'])} lines) - {s['background']}")
 
-    # Process: generate audio + compute timings
+    # Preflight Voicebox
+    voicebox_preflight(total_lines)
+
+    # Generate background images (sandbox mode, free)
+    _ = generate_background_images(script_data)
+
+    # Generate voices + compute timings
     print(f"\n🎤 Generating voices...")
     result = process_script(script_data, script_path.stem, start_time)
     if not result:
@@ -420,39 +274,27 @@ def main():
     total_seconds = result["totalDuration"] / FPS
     print(f"\n📊 Total duration: {total_seconds:.1f}s ({result['totalDuration']} frames @ {FPS}fps)")
 
-    # Save output script.json
+    # Save outputs
     output_path = OUTPUT_SCRIPT_DIR / f"{script_path.stem}.json"
     output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"  ✅ Saved script data to {output_path}")
 
-    # Copy to src/ for Remotion
-    src_script = PROJECT_ROOT / "src" / "script.json"
+    src_script = FRONTEND_DIR / "src" / "script.json"
     src_script.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(f"  ✅ Copied script.json to src/")
 
-    # Check timeout before render
     check_timeout(start_time, "Rendering video")
 
-    # Render video
+    # Render
     render_video(result)
 
-    # Copy processed script
+    # Archive processed script
     processed_path = PROCESSED_SCRIPT_DIR / script_path.name
     shutil.copy2(script_path, processed_path)
     print(f"  ✅ Archived script to {processed_path}")
 
     # Find and move rendered video
-    video_path = PROJECT_ROOT / "out" / f"{script_path.stem}.mp4"
-    possible_paths = [
-        video_path,
-        PROJECT_ROOT / "out" / "DynamicVideo.mp4",
-    ]
-    rendered_video = None
-    for p in possible_paths:
-        if p.exists():
-            rendered_video = p
-            break
-
+    rendered_video = _find_rendered_video(script_path.stem)
     if rendered_video:
         final_path = OUTPUT_VIDEO_DIR / f"{script_path.stem}.mp4"
         shutil.move(str(rendered_video), str(final_path))
@@ -460,9 +302,21 @@ def main():
         print(f"\n✅ Video saved: {final_path} ({size_mb:.1f} MB)")
     else:
         print(f"\n⚠️  Could not find rendered video in expected locations")
-        print(f"   Check PROJECT_ROOT/out/ for the output file")
+        print(f"   Check {FRONTEND_DIR / 'out/'} for the output file")
 
     print("\n✨ Pipeline complete!")
+
+
+def _find_rendered_video(script_stem: str) -> Path | None:
+    """Locate the rendered video file after Remotion finishes."""
+    candidates = [
+        PROJECT_ROOT / "out" / f"{script_stem}.mp4",
+        PROJECT_ROOT / "out" / "DynamicVideo.mp4",
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
 
 
 if __name__ == "__main__":

@@ -11,67 +11,60 @@ This project generates animated cartoon videos from markdown scripts. It uses:
 
 ## Directory Layout
 
-```
-videos-remotion/
+```videos-remotion/
 │
-├── src/                          # FRONTEND LAYER
-│   ├── components/               #   Reusable Remotion components
-│   │   ├── Background.tsx        #   Scene background renderer
-│   │   ├── Character.tsx         #   Character animation handler
-│   │   └── Subtitle.tsx          #   Subtitle + audio player
-│   ├── characters/               #   SVG character definitions
-│   │   ├── Shinchan.tsx
-│   │   ├── Doraemon.tsx
-│   │   └── ... (10+ characters)
-│   ├── config/                   #   Configuration
-│   │   ├── characters.ts         #   Character metadata & voice profiles
-│   │   └── constants.ts          #   Colors, FPS, theme
-│   ├── types.ts                  #   Shared TypeScript types
-│   ├── Root.tsx                  #   Main composition orchestrator
-│   └── index.ts                  #   Remotion entry point
+├── frontend/                     # 🎨 FRONTEND LAYER
+│   ├── src/                      #   Remotion React application
+│   │   ├── components/           #     Reusable Remotion components
+│   │   │   ├── Background.tsx    #     Scene background renderer
+│   │   │   ├── Character.tsx     #     Character animation handler
+│   │   │   └── Subtitle.tsx      #     Subtitle + audio player
+│   │   ├── characters/           #     SVG character definitions
+│   │   │   ├── Shinchan.tsx
+│   │   │   ├── Doraemon.tsx
+│   │   │   └── ... (10+ chars)
+│   │   ├── config/               #     Configuration
+│   │   │   ├── characters.ts     #     Character metadata & voice profiles
+│   │   │   └── constants.ts      #     Colors, FPS, theme
+│   │   ├── types.ts              #     Shared TypeScript types
+│   │   ├── Root.tsx              #     Main composition orchestrator
+│   │   └── index.ts              #     Remotion entry point
+│   ├── public/                   #   Static assets
+│   │   ├── audio/                #     Generated TTS audio files
+│   │   └── images/               #     Generated background images
+│   ├── package.json              #   Node.js / Remotion dependencies
+│   └── tsconfig.json             #   TypeScript config
 │
-├── backend/                      # BACKEND LAYER
-│   ├── pipeline.py               #   Main pipeline: parse → TTS → render
+├── backend/                      # ⚙️  BACKEND LAYER
+│   ├── pipeline.py               #   Pipeline: parse → TTS → render
+│   ├── server.py                 #   REST API server (Flask, port 5000)
 │   ├── run.sh                    #   CLI entry point
 │   └── requirements.txt          #   Python dependencies
 │
-├── scripts/                      # CONTENT LAYER
+├── scripts/                      # 📄 CONTENT LAYER
 │   └── *.md                      #   Markdown scripts (scenes + dialogue)
 │
-├── skills/                       # SKILLS LAYER (reusable AI/media tools)
+├── skills/                       # 🧠 SKILLS LAYER
 │   ├── image-generation/         #   Text-to-Image via Muapi API
-│   │   ├── generate_image.py     
-│   │   └── README.md
 │   ├── lipsync/                  #   Audio-driven lip sync via Muapi
-│   │   ├── lipsync.py
-│   │   └── README.md
 │   ├── whisper/                  #   Speech-to-text via OpenAI Whisper
-│   │   ├── transcribe.py
-│   │   └── README.md
 │   └── ffmpeg/                   #   Video post-processing
-│       ├── edit_video.py
-│       └── README.md
 │
-├── videos/                       # OUTPUT LAYER
+├── videos/                       # 🎥 OUTPUT LAYER
 │   └── renders/                  #   Final rendered MP4 videos
 │
-├── public/                       # STATIC ASSETS
-│   └── audio/                    #   Generated TTS audio files
-│
-├── docs/                         # DOCUMENTATION LAYER
+├── docs/                         # 📝 DOCUMENTATION LAYER
 │   └── ARCHITECTURE.md           #   This file
 │
-├── output/                       # LEGACY (migrating to videos/)
+├── output/                       # 📦 LEGACY (migrating to videos/)
 │   ├── scripts/
 │   └── videos/
 │
-├── processed/                    # LEGACY (archived scripts)
+├── processed/                    # 📦 LEGACY (archived scripts)
 │   └── scripts/
 │
-├── README.md
-├── package.json
-└── tsconfig.json
-```
+├── run.sh                        # 🔗 Root wrapper → backend/run.sh
+└── README.md```
 
 ## Data Flow
 

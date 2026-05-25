@@ -6,8 +6,8 @@
   "scripts": {
     "start": "remotion studio src/index.ts",
     "build": "remotion render src/index.ts DynamicVideo out/output.mp4 --overwrite",
-    "build:final": "./run.sh pipeline",
-    "clean": "./run.sh clean"
+    "build:final": "cd ../backend && ./run.sh pipeline",
+    "clean": "cd ../backend && ./run.sh clean"
   },
   "keywords": ["remotion", "animation", "video", "tts"],
   "license": "ISC",

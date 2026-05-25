@@ -4,13 +4,21 @@ out/
 .DS_Store
 .env
 
-# Generated files
+# Frontend generated files
+frontend/node_modules/
+frontend/out/
+frontend/.remotion/
+frontend/public/audio/*.mp3
+frontend/public/images/*.png
+frontend/public/cartoon_characters/
+frontend/src/script.json
+
+# Backend generated files
 output/
-public/audio/*.mp3
-public/cartoon_characters/
-src/script.json
+processed/
 videos/renders/
 .venv/
+backend/data/
 
 # Python cache
 __pycache__/
@@ -18,3 +26,7 @@ __pycache__/
 
 # API keys - never commit
 skills/**/.env
+
+# OS files
+.DS_Store
+Thumbs.db
