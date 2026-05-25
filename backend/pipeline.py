@@ -310,6 +310,8 @@ def main():
 def _find_rendered_video(script_stem: str) -> Path | None:
     """Locate the rendered video file after Remotion finishes."""
     candidates = [
+        FRONTEND_DIR / "out" / "DynamicVideo.mp4",
+        FRONTEND_DIR / "out" / f"{script_stem}.mp4",
         PROJECT_ROOT / "out" / f"{script_stem}.mp4",
         PROJECT_ROOT / "out" / "DynamicVideo.mp4",
     ]
