@@ -1,0 +1,11 @@
+# Video Generation Pipeline
+requests>=2.31.0
+mutagen>=1.47.0
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Whisper Transcription (optional — install separately for skills/whisper/)
+# openai-whisper>=20240930
+
+# FFmpeg wrapper (optional — install separately for skills/ffmpeg/)
+# ffmpeg-python>=0.2.0

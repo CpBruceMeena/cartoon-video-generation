@@ -20,9 +20,9 @@ from pathlib import Path
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SCRIPT_DIR = PROJECT_ROOT / "script_files"
+SCRIPT_DIR = PROJECT_ROOT / "scripts"
 AUDIO_DIR = PROJECT_ROOT / "public" / "audio"
-OUTPUT_VIDEO_DIR = PROJECT_ROOT / "output" / "videos"
+OUTPUT_VIDEO_DIR = PROJECT_ROOT / "videos" / "renders"
 OUTPUT_SCRIPT_DIR = PROJECT_ROOT / "output" / "scripts"
 PROCESSED_SCRIPT_DIR = PROJECT_ROOT / "processed" / "scripts"
 

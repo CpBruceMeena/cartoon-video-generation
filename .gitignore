@@ -9,4 +9,12 @@ output/
 public/audio/*.mp3
 public/cartoon_characters/
 src/script.json
+videos/renders/
 .venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# API keys - never commit
+skills/**/.env
