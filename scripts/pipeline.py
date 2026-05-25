@@ -361,18 +361,6 @@ def cleanup():
     print(f"  ✅ Cleaned script.json")
 
 
-def copy_character_assets():
-    """Copy character PNG assets to public/ for Remotion."""
-    chars_dir = PROJECT_ROOT / "cartoon_characters"
-    public_chars_dir = PROJECT_ROOT / "public" / "cartoon_characters"
-
-    if chars_dir.exists():
-        public_chars_dir.mkdir(parents=True, exist_ok=True)
-        for png_file in chars_dir.glob("*.png"):
-            shutil.copy2(png_file, public_chars_dir / png_file.name)
-        print(f"  ✅ Copied character PNGs to public/cartoon_characters/")
-
-
 def main():
     print("=" * 60)
     print("🎬 Remotion Video Pipeline")
@@ -396,9 +384,6 @@ def main():
 
     # Clean old files
     cleanup()
-
-    # Copy character assets
-    copy_character_assets()
 
     # Parse script
     print(f"\n📝 Parsing script...")

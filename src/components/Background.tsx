@@ -1,6 +1,6 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { COLORS } from '../constants';
+import { COLORS } from '../config/constants';
 
 type BackgroundType = 'House' | 'Street' | 'Rooftop' | 'SunsetRooftop';
 
