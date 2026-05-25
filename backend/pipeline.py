@@ -12,7 +12,6 @@ Usage:
 
 import json
 import shutil
-import struct
 import subprocess
 import sys
 import time
