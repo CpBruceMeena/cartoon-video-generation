@@ -100,45 +100,6 @@ run_help() {
     show_help
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
-case "${1:-}" in
-    pipeline)    run_pipeline ;;
-    studio)      run_studio ;;
-    build)       run_build ;;
-    install)     run_install ;;
-    headroom)    shift; run_headroom "$@" ;;
-    clean)       run_clean ;;
-    api)         run_api ;;
-    help|--help|-h) run_help ;;
-    "")
-        # No args - show menu
-        show_help
-        echo "Choose an option:"
-        echo "  [p] Run Full Pipeline"
-        echo "  [s] Open Studio (Preview)"
-        echo "  [b] Build Video"
-        echo "  [c] Clean Generated Files"
-        echo "  [a] Start API Server"
-        echo "  [q] Quit"
-        read -p "> " choice
-        case "$choice" in
-            [pP]*) run_pipeline ;;
-            [sS]*) run_studio ;;
-            [bB]*) run_build ;;
-            [cC]*) run_clean ;;
-            [aA]*) run_api ;;
-            [qQ]*) echo "Exiting."; exit 0 ;;
-            *) echo "Exiting."; exit 0 ;;
-        esac
-        ;;
-    *)
-        echo "Unknown command: $1"
-        show_help
-        exit 1
-        ;;
-esac
-
 # ── Headroom Optimization Proxy ───────────────────────────────────────────────
 
 HEADROOM_PID_FILE="$PROJECT_ROOT/.headroom.pid"
@@ -235,6 +196,45 @@ run_headroom() {
             ;;
     esac
 }
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
+case "${1:-}" in
+    pipeline)    run_pipeline ;;
+    studio)      run_studio ;;
+    build)       run_build ;;
+    install)     run_install ;;
+    headroom)    shift; run_headroom "$@" ;;
+    clean)       run_clean ;;
+    api)         run_api ;;
+    help|--help|-h) run_help ;;
+    "")
+        # No args - show menu
+        show_help
+        echo "Choose an option:"
+        echo "  [p] Run Full Pipeline"
+        echo "  [s] Open Studio (Preview)"
+        echo "  [b] Build Video"
+        echo "  [c] Clean Generated Files"
+        echo "  [a] Start API Server"
+        echo "  [q] Quit"
+        read -p "> " choice
+        case "$choice" in
+            [pP]*) run_pipeline ;;
+            [sS]*) run_studio ;;
+            [bB]*) run_build ;;
+            [cC]*) run_clean ;;
+            [aA]*) run_api ;;
+            [qQ]*) echo "Exiting."; exit 0 ;;
+            *) echo "Exiting."; exit 0 ;;
+        esac
+        ;;
+    *)
+        echo "Unknown command: $1"
+        show_help
+        exit 1
+        ;;
+esac
 
 # ── API Server ────────────────────────────────────────────────────────────────
 
