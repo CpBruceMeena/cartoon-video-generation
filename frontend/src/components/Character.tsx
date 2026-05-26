@@ -6,6 +6,8 @@ interface CharacterProps {
 	type: string;
 	style?: React.CSSProperties;
 	expression?: Expression;
+	/** Expression this character should show when listening (not speaking) */
+	listeningExpression?: Expression;
 	isSpeaking?: boolean;
 	/** Scene-relative frame */
 	sceneFrame?: number;
@@ -21,6 +23,7 @@ export const Character: React.FC<CharacterProps> = ({
 	type,
 	style,
 	expression = 'normal',
+	listeningExpression,
 	isSpeaking = false,
 	sceneFrame = 0,
 	speakingStartFrame = 0,
@@ -30,6 +33,15 @@ export const Character: React.FC<CharacterProps> = ({
 	const accentColor = getCharacterColor(normalized);
 	const displayName = getCharacterDisplayName(normalized);
 	const { fps } = useVideoConfig();
+
+	// Determine effective expression: if speaking, use speaking expression;
+	// if not speaking and we have a listening expression, use that;
+	// otherwise fall through to normal
+	const effectiveExpression = isSpeaking
+		? expression
+		: !isSpeaking && listeningExpression
+			? listeningExpression
+			: expression;
 
 	// Speaking animation: sinusoidal bob and subtle scale oscillation
 	const speakingProgress = isSpeaking
@@ -54,6 +66,16 @@ export const Character: React.FC<CharacterProps> = ({
 
 		// Head wobble / body sway — more expressive when talking
 		rotate = Math.sin(speakingProgress * 0.2) * 3;
+	} else if (effectiveExpression === 'listening') {
+		// Listening animation: gentle nod / head tilt toward speaker
+		const listenNod = Math.sin(sceneFrame * 0.06) * 2;
+		const listenTilt = Math.sin(sceneFrame * 0.04) * 1.5;
+		translateY = listenNod;
+		scale = 1 + Math.sin(sceneFrame * 0.02) * 0.01;
+		rotate = listenTilt;
+
+		// Subtle dim when listening
+		filter = 'brightness(0.95)';
 	} else {
 		// Idle animation: gentle breathing sway with slight rotation
 		const idleSway = Math.sin(sceneFrame * 0.04) * 2.5;
@@ -62,9 +84,10 @@ export const Character: React.FC<CharacterProps> = ({
 		rotate = Math.sin(sceneFrame * 0.03) * 1.2;
 	}
 
-	// Expression-based visual effects
-	switch (expression) {
+	// Expression-based visual effects (applied on top)
+	switch (effectiveExpression) {
 		case 'happy':
+		case 'laughing':
 			scale *= 1.05;
 			filter = 'brightness(1.06) saturate(1.15)';
 			break;
@@ -75,6 +98,17 @@ export const Character: React.FC<CharacterProps> = ({
 		case 'angry':
 			scale *= 0.95;
 			filter = 'saturate(1.35) hue-rotate(-8deg) brightness(0.93)';
+			break;
+		case 'thinking':
+			scale *= 1.02;
+			filter = 'saturate(0.9) brightness(0.96)';
+			break;
+		case 'listening':
+			filter = 'brightness(0.95)';
+			break;
+		case 'sad':
+			scale *= 0.97;
+			filter = 'saturate(0.85) brightness(0.92)';
 			break;
 	}
 
@@ -89,7 +123,9 @@ export const Character: React.FC<CharacterProps> = ({
 	// Subtle idle dim when not speaking
 	const idleOpacity = isSpeaking
 		? 1
-		: 0.9 + Math.sin(sceneFrame * 0.02) * 0.05;
+		: effectiveExpression === 'listening'
+			? 0.95
+			: 0.9 + Math.sin(sceneFrame * 0.02) * 0.05;
 
 	// ── Speaking glow ring animation ───────────────────────────────────
 	const glowPulse = 0.4 + Math.sin(sceneFrame * 0.12) * 0.25;

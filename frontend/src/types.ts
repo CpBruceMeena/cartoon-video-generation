@@ -1,8 +1,8 @@
-export type Expression = 'normal' | 'happy' | 'angry' | 'shocked';
+export type Expression = 'normal' | 'happy' | 'angry' | 'shocked' | 'thinking' | 'listening' | 'sad' | 'laughing';
 
 export interface DialogueLine {
 	speaker: string;
-	expression: 'normal' | 'happy' | 'angry' | 'shocked';
+	expression: Expression;
 	text: string;
 	audio: string | null;
 	startFrame: number;

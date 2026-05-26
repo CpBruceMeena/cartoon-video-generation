@@ -5,7 +5,7 @@ import { DoraemonSVG } from './Doraemon';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export type Expression = 'normal' | 'happy' | 'angry' | 'shocked';
+export type Expression = 'normal' | 'happy' | 'angry' | 'shocked' | 'thinking' | 'listening' | 'sad' | 'laughing';
 
 export interface CharacterSVGProps {
 	expression?: Expression;
