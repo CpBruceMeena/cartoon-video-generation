@@ -31,3 +31,10 @@ skills/**/.env
 # OS files
 .DS_Store
 Thumbs.db
+.code-review-graph/
+.code_review_graph/
+code-review-graph-cache/
+crg-cache/
+.cache/code-review-graph/
+.cache/crg/
+*.crg
