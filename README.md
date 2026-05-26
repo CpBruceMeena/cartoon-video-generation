@@ -92,8 +92,77 @@ skills/ffmpeg/ ─────────────────→ trimmed, m
 | `cd backend && ./run.sh pipeline` | Full pipeline: script → TTS → render |
 | `cd backend && ./run.sh studio` | Open Remotion Studio preview (localhost:3000) |
 | `cd backend && ./run.sh build` | Render current script.json to MP4 |
+| `cd backend && ./run.sh install` | Install Python dependencies |
 | `cd backend && ./run.sh api` | Start API server on port 5000 |
+| `cd backend && ./run.sh headroom start` | Start Headroom optimization proxy |
+| `cd backend && ./run.sh headroom stop` | Stop Headroom proxy |
+| `cd backend && ./run.sh headroom status` | Check Headroom proxy status |
 | `cd backend && ./run.sh clean` | Remove all generated files |
+
+## Headroom Optimization Proxy
+
+[Headroom](https://headroom.ai) is a **context compression layer** for AI agents. It sits between your AI coding tools (Claude Code, Cursor, etc.) and the LLM provider, compressing context before it's sent — reducing token usage by **60–95%** while maintaining accuracy.
+
+### How it helps this project
+
+When working on the cartoon-video-generation project with AI coding agents:
+
+- **Context compression**: Compresses tool outputs, logs, file contents, and conversation history
+- **SmartCrusher**: Intelligently compresses JSON, code, and structured data preservingschema
+- **CacheAligner**: Optimizes prefix caching for Anthropic/OpenAI providers
+- **Code-aware**: AST-based compression for Remotion components, Python backend, and config files
+- **Memory**: Cross-session memory shared across different AI agents
+- **Learning**: Mines failed sessions to suggest improvements to agent configuration
+
+### Quick Start
+
+```bash
+# 1. Install (one-time)
+pip install -r backend/requirements.txt
+
+# 2. Start the proxy
+cd backend && ./run.sh headroom start
+
+# 3. Point Claude Code at it
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8787
+
+# 4. Work as usual — Headroom compresses context automatically
+claude
+```
+
+### Headroom Commands
+
+```bash
+cd backend && ./run.sh headroom start    # Start the proxy
+cd backend && ./run.sh headroom stop     # Stop the proxy
+cd backend && ./run.sh headroom restart  # Restart the proxy
+cd backend && ./run.sh headroom status   # Check if running
+cd backend && ./run.sh headroom logs     # Follow proxy logs
+```
+
+### Configuration
+
+Headroom proxy settings are in `config/headroom.yml`:
+- **Port**: 8787 (default)
+- **Mode**: Token optimization with code-aware compression
+- **Memory**: Cross-session memory enabled
+- **Learning**: Session mining enabled
+
+### Integration with AI Tools
+
+| Tool | Environment Variable |
+|------|---------------------|
+| Claude Code | `export ANTHROPIC_BASE_URL=http://127.0.0.1:8787` |
+| OpenAI tools | `export OPENAI_BASE_URL=http://127.0.0.1:8787/v1` |
+| Cursor | Set proxy in Cursor settings |
+| Any LLM tool | Point base URL to `http://127.0.0.1:8787` |
+
+### Benefits
+
+- **Cost savings**: 60–90% fewer tokens = significantly lower API costs
+- **Larger effective context**: 2–10x bigger context windows
+- **Privacy**: Prompts stay local, not logged by default
+- **Transparency**: Full audit trail of what was compressed
 
 ## API Server
 

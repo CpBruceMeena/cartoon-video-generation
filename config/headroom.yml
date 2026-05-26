@@ -1,0 +1,39 @@
+# ── Headroom Proxy Configuration ────────────────────────────────────
+# Context compression layer for AI agents working on this project.
+# Run: cd backend && ./run.sh headroom start
+# Website: https://headroom.ai
+# ──────────────────────────────────────────────────────────────────────
+
+proxy:
+  host: "127.0.0.1"
+  port: 8787
+
+  # Optimization: compress tool outputs, logs, and context before LLM
+  mode: token
+  # Set to "cache" for provider-cache-only mode
+
+  # Code-aware compression (AST-based, better for code context)
+  code_aware: true
+
+  # Backend provider to proxy to
+  backend: anthropic
+
+  # Memory: persistent cross-session memory
+  memory: true
+  memory_storage: local  # options: local, qdrant
+
+  # Learning: mine failed sessions for agent config improvements
+  learn: true
+
+# Project-specific settings
+project:
+  name: "cartoon-video-generation"
+  description: "Remotion-based animated cartoon video generator with Voicebox TTS"
+
+  # Key directories that Headroom should prioritize context from
+  context_dirs:
+    - frontend/src        # Remotion React components
+    - backend             # Python pipeline & API
+    - docs                # Documentation
+    - config              # Configuration files
+    - skills              # Reusable AI/media tools

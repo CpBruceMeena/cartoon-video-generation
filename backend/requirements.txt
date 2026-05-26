@@ -4,6 +4,10 @@ mutagen>=1.47.0
 flask>=3.0.0
 flask-cors>=4.0.0
 
+# Headroom: Context optimization proxy for AI agents
+# Reduces token usage by 60-95% when working on this project
+headroom-ai[proxy]>=0.22.2
+
 # Whisper Transcription (optional — install separately for skills/whisper/)
 # pip install openai-whisper
 
