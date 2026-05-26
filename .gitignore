@@ -38,3 +38,7 @@ crg-cache/
 .cache/code-review-graph/
 .cache/crg/
 *.crg
+
+# Headroom cache
+.headroom/
+.headroom.log

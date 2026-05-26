@@ -8,6 +8,10 @@ flask-cors>=4.0.0
 # Reduces token usage by 60-95% when working on this project
 headroom-ai[proxy]>=0.22.2
 
+# Anthropic Claude SDK (optional — expression/gesture inference)
+# Requires ANTHROPIC_API_KEY env var
+anthropic>=0.49.0
+
 # Whisper Transcription (optional — install separately for skills/whisper/)
 # pip install openai-whisper
 

@@ -300,13 +300,13 @@ const DynamicScene: React.FC<{
 							{...(isListening ? { listeningExpression: 'listening' as const } : {})}
 							isSpeaking={isActive}
 							sceneFrame={frame}
-							speakingStartFrame={
-								isActive && activeLine
-									? activeLine.startFrame - scene.startFrame
-									: 0
-							}
-							amplitude={isActive ? audioAmplitude : 0}
-							facing={isLeftSide ? 1 : -1}
+							speakingStartFrame=							{isActive && activeLine
+								? activeLine.startFrame - scene.startFrame
+								: 0
+						}
+						amplitude={isActive ? audioAmplitude : 0}
+						{...(isActive && activeLine?.gesture ? { gesture: activeLine.gesture } : {})}
+						facing={isLeftSide ? 1 : -1}
 							style={{
 								bottom: 140,
 								left: `${leftPercent}%`,
@@ -353,6 +353,7 @@ const DynamicScene: React.FC<{
 							speaker={line.speaker}
 							text={line.text}
 							expression={line.expression}
+							{...(line.wordTimings ? { wordTimings: line.wordTimings } : {})}
 						/>
 					</Sequence>
 				);

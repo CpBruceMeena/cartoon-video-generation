@@ -13,7 +13,11 @@ export interface CharacterSVGProps {
 	speakingFrame?: number;
 	/** Per-frame RMS amplitude (0–1) for audio-driven mouth animation */
 	amplitude?: number;
+	/** Per-line gesture for arm/body pose */
+	gesture?: Gesture;
 }
+
+import type { Gesture } from '../types';
 
 export interface CharacterColors {
 	primary: string;

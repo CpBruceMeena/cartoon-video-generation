@@ -35,6 +35,7 @@ const BODY_LEAN: Record<string, number> = {
 	isSpeaking = false,
 	speakingFrame = 0,
 	amplitude = 0,
+	gesture,
 }) => {
 	// ── Shared hooks ──────────────────────────────────────────────────────
 	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
@@ -77,6 +78,7 @@ const BODY_LEAN: Record<string, number> = {
 		speakingFrame,
 		expression,
 		cfg.arm,
+		gesture,
 	);
 
 	const { bodyBounce } = useBodyMovement(

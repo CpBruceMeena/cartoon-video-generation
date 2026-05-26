@@ -46,6 +46,7 @@ const EXPR_CONFIG: Record<string, { browAngle: number; browAngleR: number; browY
 	isSpeaking = false,
 	speakingFrame = 0,
 	amplitude = 0,
+	gesture,
 }) => {
 	// ── Shared hooks ──────────────────────────────────────────────────────
 	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
@@ -61,6 +62,7 @@ const EXPR_CONFIG: Record<string, { browAngle: number; browAngleR: number; browY
 		speakingFrame,
 		expression,
 		cfg.arm,
+		gesture,
 	);
 
 	const { bodyBounce, bodyWobble } = useBodyMovement(

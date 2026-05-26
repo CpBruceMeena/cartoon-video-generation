@@ -1,20 +1,32 @@
 import React, { useMemo } from 'react';
 import { interpolate, useCurrentFrame, useVideoConfig, spring } from 'remotion';
+import { loadFont } from '@remotion/google-fonts/Nunito';
 import { getSubtitleColors, normalizeCharacterName, type Expression } from '../characters/registry';
 import { type, fonts } from '../config/type';
 import { springs } from '../config/springs';
+
+// Load Nunito font for cartoon-style subtitles
+const { fontFamily: nunitoFontFamily } = loadFont();
+
+interface WordTiming {
+	word: string;
+	startFrame: number;
+	endFrame: number;
+}
 
 interface SubtitleProps {
 	text: string;
 	speaker?: string;
 	expression?: Expression;
+	/** Word-level timings for karaoke-style highlighting */
+	wordTimings?: WordTiming[];
 }
 
 /**
  * Anime-style subtitle with line-by-line typewriter reveal,
  * character-colored accents, and expressive animations.
  */
-export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression }) => {
+export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression, wordTimings }) => {
 	const frame = useCurrentFrame();
 	const { durationInFrames, fps } = useVideoConfig();
 
@@ -95,37 +107,74 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 		: undefined;
 	const badgePulse = 1 + Math.sin(frame * 0.18) * 0.04;
 
-	// ── Key word emphasis ──────────────────────────────────────────────
+	// ── Karaoke word highlighting (when wordTimings available) ────────────
+	const currentWordIdx = useMemo(() => {
+		if (!wordTimings || wordTimings.length === 0) return -1;
+		return wordTimings.findIndex(w => frame >= w.startFrame && frame <= w.endFrame);
+	}, [frame, wordTimings]);
+
+	// ── Key word emphasis + karaoke ──────────────────────────────────
 	const formattedLines = useMemo(() => {
 		return displayLines.map((line, lineIdx) => {
 			if (!line) return null;
 			const words = line.split(/(\s+)/);
+			// Build a flat word index for the entire text
+			let globalWordOffset = 0;
+			for (let i = 0; i < lineIdx; i++) {
+				if (displayLines[i]) {
+					globalWordOffset += displayLines[i]!.split(/(\s+)/).length;
+				}
+			}
 			return (
 				<div key={lineIdx} style={{ marginBottom: lineIdx < lines.length - 1 ? 6 : 0 }}>
 					{words.map((word, w) => {
 						const clean = word.replace(/[^a-zA-Z]/g, '');
-						if (clean.length >= 7 && frame > 5) {
+						const wordIndex = globalWordOffset + w;
+						const isCurrentWord = wordTimings && wordTimings.length > 0 && wordIndex === currentWordIdx;
+						const isLongWord = clean.length >= 7 && frame > 5;
+						
+						let wordColor: string | undefined;
+						let additionalStyle: React.CSSProperties = {};
+						
+						if (isCurrentWord) {
+							// Karaoke highlight — use accent color
+							wordColor = speakerColors?.accent || '#FFD54F';
+							additionalStyle = {
+								fontWeight: 800,
+								transform: 'scale(1.08)',
+								display: 'inline-block',
+								textShadow: `0 0 12px ${speakerColors?.accent || '#FFD54F'}66`,
+							};
+						} else if (isLongWord) {
 							const emphasis = 1 + Math.sin(frame * 0.12 + w) * 0.05;
-							return (
-								<span
-									key={w}
-									style={{
-										color: speakerColors?.accent || '#FFD54F',
-										transform: `scale(${emphasis})`,
-										display: 'inline-block',
-										WebkitTextStroke: '1.5px rgba(0,0,0,0.4)',
-									}}
-								>
-									{word}
-								</span>
-							);
+							wordColor = speakerColors?.accent || '#FFD54F';
+							additionalStyle = {
+								transform: `scale(${emphasis})`,
+								display: 'inline-block',
+							};
+						} else if (wordTimings && wordTimings.length > 0 && currentWordIdx > wordIndex) {
+							// Already spoken words — slightly dimmer
+							wordColor = 'rgba(255,255,255,0.6)';
 						}
-						return <span key={w} style={{ WebkitTextStroke: '1.5px rgba(0,0,0,0.4)' }}>{word}</span>;
+						
+						return (
+							<span
+								key={w}
+								style={{
+									color: wordColor,
+									...additionalStyle,
+									WebkitTextStroke: '1.5px rgba(0,0,0,0.4)',
+									transition: 'color 0.08s ease, transform 0.12s ease',
+								}}
+							>
+								{word}
+							</span>
+						);
 					})}
 				</div>
 			);
 		});
-	}, [displayLines, frame, speakerColors]);
+	}, [displayLines, frame, speakerColors, wordTimings, currentWordIdx]);
 
 	// ── Cursor blink while typewriter is active ─────────────────────────
 	const showCursor = lines.length > 0 && (currentLineIndex < lines.length - 1 || typewriterProgress < currentLineLen);
@@ -177,7 +226,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 					borderRadius: 18,
 					fontSize: type.body.fontSize,
 					lineHeight: type.body.lineHeight,
-					fontFamily: fonts.jp,
+					fontFamily: nunitoFontFamily || fonts.subtitle,
 					fontWeight: type.body.fontWeight,
 					color: '#fff',
 					textAlign: 'center',

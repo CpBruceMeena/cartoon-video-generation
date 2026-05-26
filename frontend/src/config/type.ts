@@ -20,6 +20,8 @@ export const fonts = {
 	body: '"Inter", "Helvetica Neue", Arial, sans-serif',
 	mono: '"Fira Code", "Consolas", monospace',
 	jp: '"Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif',
+	/** Nunito — rounded cartoon font for subtitles */
+	subtitle: '"Nunito", "Hiragino Sans", "Noto Sans JP", sans-serif',
 } as const;
 
 /**

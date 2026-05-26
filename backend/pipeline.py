@@ -43,7 +43,12 @@ from backend.config import (
 )
 from backend.script_parser import parse_script, normalize_name
 from backend.voicebox_client import generate_voice, voicebox_preflight
-from backend.audio_utils import get_audio_duration
+from backend.audio_utils import get_audio_duration, mix_bgm_with_audio
+from backend.lipsync_generator import (
+    generate_word_timestamps,
+    timestamps_to_word_timings_frames,
+    estimate_word_timings,
+)
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -109,10 +114,33 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
             # ── Extract per-frame amplitude for lip-sync ────────────────
             amplitude = _extract_amplitude_envelope(audio_path, duration_frames)
 
+            # ── Generate word timestamps for karaoke subtitles ──────────
+            word_timings = None
+            if audio_path.exists():
+                try:
+                    # Try Whisper-based word timestamps first
+                    word_ts = generate_word_timestamps(audio_path)
+                    if word_ts:
+                        word_timings = timestamps_to_word_timings_frames(
+                            word_ts, global_frame, FPS,
+                        )
+                    else:
+                        # Fallback: estimate based on text position
+                        word_timings = estimate_word_timings(
+                            line["text"], global_frame, duration_frames, FPS,
+                        )
+                except Exception as e:
+                    print(f"     ⚠️  Word timing generation failed ({e}), using estimate")
+                    word_timings = estimate_word_timings(
+                        line["text"], global_frame, duration_frames, FPS,
+                    )
+
             line["audio"] = audio_filename
             line["startFrame"] = global_frame
             line["durationInFrames"] = duration_frames
             line["amplitude"] = amplitude
+            if word_timings:
+                line["wordTimings"] = word_timings
             global_frame += duration_frames
             scene_duration += duration_frames
 
@@ -252,6 +280,15 @@ def _sine_fallback(num_frames: int) -> list[float]:
     return [0.3 + 0.25 * math.sin(i * 0.35) for i in range(num_frames)]
 
 
+def _find_bgm() -> Path | None:
+    """Find a BGM file in the audio/bgm directory."""
+    bgm_dir = AUDIO_DIR / "bgm"
+    if not bgm_dir.exists():
+        return None
+    candidates = sorted(bgm_dir.glob("*.mp3")) + sorted(bgm_dir.glob("*.wav")) + sorted(bgm_dir.glob("*.m4a"))
+    return candidates[0] if candidates else None
+
+
 def _write_silent_wav(path: Path, duration_sec: float = 3.0) -> None:
     """Write a silent WAV file as placeholder when voice generation fails.
     This ensures Remotion can find the audio file and won't 404 during render.
@@ -378,6 +415,31 @@ def main():
 
     total_seconds = result["totalDuration"] / FPS
     print(f"\n📊 Total duration: {total_seconds:.1f}s ({result['totalDuration']} frames @ {FPS}fps)")
+
+    # ── Mix BGM with dialogue audio ────────────────────────────────────
+    bgm_path = _find_bgm()
+    if bgm_path:
+        print(f"\n🎵 Mixing background music: {bgm_path.name}")
+        audio_files = []
+        for scene in result.get("scenes", []):
+            for line in scene.get("dialogue", []):
+                audio_file = AUDIO_DIR / line.get("audio", "")
+                if audio_file.exists():
+                    audio_files.append(audio_file)
+
+        if audio_files:
+            mixed_output = AUDIO_DIR / "mixed_audio.wav"
+            success = mix_bgm_with_audio(
+                audio_files, mixed_output,
+                bgm_path=bgm_path,
+                bgm_volume=0.12,
+            )
+            if success:
+                print(f"  ✅ BGM mixed → {mixed_output.name}")
+            else:
+                print(f"  ⚠️  BGM mixing skipped")
+    else:
+        print(f"\n🎵 No BGM file found (optional — place a .mp3/.wav in {AUDIO_DIR / 'bgm'}/)")
 
     # Save outputs
     output_path = OUTPUT_SCRIPT_DIR / f"{script_path.stem}.json"

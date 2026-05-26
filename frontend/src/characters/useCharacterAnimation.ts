@@ -1,4 +1,4 @@
-import type { Expression } from '../types';
+import type { Expression, Gesture } from '../types';
 
 // ─── Shared Types ──────────────────────────────────────────────────────────
 
@@ -10,6 +10,8 @@ export interface CharacterSVGProps {
 	speakingFrame?: number;
 	/** Per-frame RMS amplitude (0–1) for audio-driven mouth animation */
 	amplitude?: number;
+	/** Per-line gesture for arm/body pose */
+	gesture?: Gesture;
 }
 
 // ─── Mouth Speaking Animation ─────────────────────────────────────────────
@@ -89,6 +91,17 @@ export function useEyeBlink(
 
 // ─── Arm Swing / Wave Animation ───────────────────────────────────────────
 
+// Gesture pose map — fixed arm angles for each gesture
+const GESTURE_POSES: Record<string, { left: number; right: number }> = {
+	default: { left: 0, right: 0 },
+	waving: { left: -60, right: 10 },
+	pointing: { left: -50, right: 20 },
+	crossed: { left: -25, right: 25 },
+	hips: { left: -35, right: -35 },
+	thinking: { left: -45, right: -10 },
+	surprised: { left: -55, right: -55 },
+};
+
 export function useArmAnimation(
 	isSpeaking: boolean,
 	speakingFrame: number,
@@ -106,6 +119,8 @@ export function useArmAnimation(
 		/** Additional static angle for the right arm (e.g. Doraemon's +30°) */
 		defaultRightOffset?: number;
 	},
+	/** Per-line gesture override (overrides expression-based arm animation) */
+	gesture?: Gesture,
 ) {
 	const speakAmplitude = opts?.speakAmplitude ?? 16;
 	const speakFrequency = opts?.speakFrequency ?? 0.22;
@@ -116,6 +131,20 @@ export function useArmAnimation(
 	const shockedOffset = opts?.shockedOffset ?? -22;
 	const defaultLeft = opts?.defaultLeftOffset ?? 0;
 	const defaultRight = opts?.defaultRightOffset ?? 0;
+
+	// If a specific gesture is provided, use fixed pose angles
+	if (gesture && gesture !== 'default') {
+		const pose = GESTURE_POSES[gesture] ?? GESTURE_POSES.default!;
+		// Add subtle idle sway to gesture poses for liveliness
+		const sway = isSpeaking
+			? Math.sin(speakingFrame * 0.1) * 3
+			: Math.sin(speakingFrame * 0.03) * 1.5;
+		return {
+			leftArmAngle: pose.left + (gesture === 'waving' ? Math.sin(speakingFrame * 0.25) * 15 : sway),
+			rightArmAngle: pose.right + sway,
+			armSwing: 0,
+		};
+	}
 
 	const armSwing = isSpeaking
 		? Math.sin(speakingFrame * speakFrequency * Math.PI * 2) * speakAmplitude

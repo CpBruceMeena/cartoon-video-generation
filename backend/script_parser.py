@@ -11,6 +11,8 @@ Non-dialogue sections (characters, production notes, etc.) are
 automatically filtered out.
 """
 
+import json
+import os
 import re
 from pathlib import Path
 
@@ -116,6 +118,7 @@ def parse_script(filepath: Path) -> dict:
                 current_scene["dialogue"].append({
                     "speaker": speaker,
                     "expression": parse_expression(text),
+                    "gesture": parse_gesture(text),
                     "text": text,
                 })
             continue
@@ -146,7 +149,17 @@ def detect_background(scene_title: str, dialogue_text: str = "") -> str:
 
 
 def parse_expression(text: str) -> str:
-    """Infer character expression from dialogue text."""
+    """Infer character expression from dialogue text.
+
+    Uses Claude API for higher-quality inference when available,
+    falls back to rule-based detection.
+    """
+    # Try Claude API first
+    result = _claude_infer_expression_and_gesture(text)
+    if result:
+        return result.get("expression", "normal")
+
+    # Fallback: rule-based detection
     t = text.lower()
     if "!!" in text or "!?" in text:
         return "shocked"
@@ -161,6 +174,65 @@ def parse_expression(text: str) -> str:
     if "..." in t or "hmm" in t or "maybe" in t:
         return "normal"
     return "normal"
+
+
+def parse_gesture(text: str) -> str:
+    """Infer character gesture from dialogue text.
+
+    Uses Claude API for higher-quality inference when available,
+    falls back to rule-based detection.
+    """
+    # Try Claude API first
+    result = _claude_infer_expression_and_gesture(text)
+    if result:
+        return result.get("gesture", "default")
+
+    # Fallback: rule-based gesture detection
+    t = text.lower()
+    if any(w in t for w in ("wave", "hello", "hi ", "hey", "goodbye", "bye")):
+        return "waving"
+    if any(w in t for w in ("point", "look", "there", "that's", "this is")):
+        return "pointing"
+    if any(w in t for w in ("cross", "arms", "annoyed", "mad", "furious")):
+        return "crossed"
+    if any(w in t for w in ("hmm", "maybe", "think", "wonder", "guess")):
+        return "thinking"
+    if any(w in t for w in ("wow", "what?!", "really?", "no way", "surprised")):
+        return "surprised"
+    if "hips" in t or "hands on" in t:
+        return "hips"
+    return "default"
+
+
+def _claude_infer_expression_and_gesture(text: str) -> dict | None:
+    """Use Claude Haiku to infer expression and gesture for a dialogue line.
+
+    Returns {"expression": ..., "gesture": ...} or None if Claude is unavailable.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            max_tokens=100,
+            messages=[{
+                "role": "user",
+                "content": f"""Classify this cartoon dialogue line for animation animation.
+Text: "{text}"
+
+Respond with JSON only:
+{{"expression": "normal|happy|angry|shocked|thinking|laughing|sad", "gesture": "default|waving|pointing|crossed|hips|thinking|surprised"}}"""
+            }]
+        )
+        result = json.loads(response.content[0].text)
+        return result
+    except Exception as e:
+        # Claude unavailable — silently fall back to rule-based
+        return None
 
 
 def _is_real_dialogue_speaker(speaker: str) -> bool:

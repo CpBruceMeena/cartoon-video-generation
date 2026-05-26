@@ -1,6 +1,7 @@
 import React from 'react';
 import { spring, useVideoConfig, interpolate, Easing } from 'remotion';
 import { getCharacterSvg, getCharacterColor, getCharacterDisplayName, normalizeCharacterName, isKnownCharacter, type Expression } from '../characters/registry';
+import type { Gesture } from '../types';
 
 interface CharacterProps {
 	type: string;
@@ -17,6 +18,8 @@ interface CharacterProps {
 	facing?: 1 | -1;
 	/** Per-frame amplitude (0–1) for audio-driven mouth animation */
 	amplitude?: number;
+	/** Per-line gesture for arm/body pose */
+	gesture?: Gesture;
 }
 
 /**
@@ -33,6 +36,7 @@ export const Character: React.FC<CharacterProps> = React.memo(({
 	speakingStartFrame = 0,
 	facing = 1,
 	amplitude = 0,
+	gesture,
 }) => {
 	const normalized = normalizeCharacterName(type);
 	const SvgComponent = getCharacterSvg(normalized);
@@ -212,6 +216,7 @@ export const Character: React.FC<CharacterProps> = React.memo(({
 						isSpeaking={isSpeaking}
 						speakingFrame={speakingProgress}
 						amplitude={amplitude}
+						{...(gesture ? { gesture } : {})}
 					/>
 				) : (
 					<div
