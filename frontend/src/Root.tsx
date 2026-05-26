@@ -1,5 +1,6 @@
 import React from 'react';
-import { Composition, Series, AbsoluteFill, useCurrentFrame, Sequence, Audio, staticFile } from 'remotion';
+import { Composition, AbsoluteFill, useCurrentFrame, Sequence, Audio, staticFile, interpolate, spring, useVideoConfig } from 'remotion';
+import { TransitionSeries, linearTiming, linearBlur } from '@remotion/transitions';
 import { FPS } from './config/constants';
 import { Background } from './components/Background';
 import { Character } from './components/Character';
@@ -18,12 +19,20 @@ const fallbackData: ScriptData = {
 
 const scriptData: ScriptData = (rawData as ScriptData) ?? fallbackData;
 
+// ── Transition config ────────────────────────────────────────────────────
+const TRANSITION_DURATION = 12; // ~0.5s at 24fps
+
+// Transitions add extra frames between scenes
+const totalWithTransitions =
+	scriptData.totalDuration +
+	(scriptData.scenes.length - 1) * TRANSITION_DURATION;
+
 export const RemotionRoot: React.FC = () => {
 	return (
 		<Composition
 			id="DynamicVideo"
 			component={DynamicMovie}
-			durationInFrames={scriptData.totalDuration}
+			durationInFrames={Math.max(1, totalWithTransitions)}
 			fps={FPS}
 			width={1920}
 			height={1080}
@@ -31,86 +40,161 @@ export const RemotionRoot: React.FC = () => {
 	);
 };
 
+// ── DynamicMovie: Scenes with smooth transitions ─────────────────────────
+
 const DynamicMovie: React.FC = () => {
 	return (
-		<Series>
-			{scriptData.scenes.map((scene) => (
-				<Series.Sequence
-					key={scene.id}
-					durationInFrames={scene.durationInFrames}
-				>
-					<DynamicScene scene={scene} />
-				</Series.Sequence>
-			))}
-		</Series>
+		<TransitionSeries>
+			{scriptData.scenes.flatMap((scene, index) => {
+				const elements: React.ReactNode[] = [
+					<TransitionSeries.Sequence
+						key={scene.id}
+						durationInFrames={scene.durationInFrames}
+					>
+						<DynamicScene scene={scene} />
+					</TransitionSeries.Sequence>,
+				];
+				if (index < scriptData.scenes.length - 1) {
+					elements.push(
+						<TransitionSeries.Transition
+							key={`t-${index}`}
+							presentation={linearBlur({})}
+							timing={linearTiming({
+								durationInFrames: TRANSITION_DURATION,
+							})}
+						/>,
+					);
+				}
+				return elements;
+			})}
+		</TransitionSeries>
 	);
 };
 
+// ── DynamicScene: Per-scene content with camera movement ─────────────────
+
+const CAMERA_ZOOM_INTENSITY = 0.04; // 4% zoom on active speaker
+const CAMERA_PAN_INTENSITY = 40; // 40px pan toward active speaker
+
 const DynamicScene: React.FC<{ scene: ScriptData['scenes'][0] }> = ({ scene }) => {
 	const frame = useCurrentFrame();
+	const { fps } = useVideoConfig();
 
 	// Identify all unique speakers in this scene
 	const speakersInScene = Array.from(
 		new Set(scene.dialogue.map((d) => d.speaker))
 	);
 
-	// Find the active dialogue line at the current frame (scene-relative frame + scene.startFrame = global frame)
+	// Find the active dialogue line at the current frame
+	// scene-relative frame + scene.startFrame = global frame
 	const activeLine: DialogueLine | undefined = scene.dialogue.find((d) => {
 		const globalFrame = frame + scene.startFrame;
-		return globalFrame >= d.startFrame && globalFrame < d.startFrame + d.durationInFrames;
+		return (
+			globalFrame >= d.startFrame &&
+			globalFrame < d.startFrame + d.durationInFrames
+		);
 	});
+
+	// ── Camera position: smoothly follow the speaking character ───────
+	const activeSpeakerIndex = activeLine
+		? speakersInScene.indexOf(activeLine.speaker)
+		: -1;
+
+	// Target pan (0 = center, negative = left, positive = right)
+	let targetPan = 0;
+	if (activeSpeakerIndex >= 0 && speakersInScene.length > 1) {
+		const numSpeakers = speakersInScene.length;
+		targetPan = interpolate(
+			activeSpeakerIndex,
+			[0, numSpeakers - 1],
+			[-CAMERA_PAN_INTENSITY, CAMERA_PAN_INTENSITY],
+		);
+	}
+
+	// Spring-based smooth camera movement
+	const cameraPan = spring({
+		frame,
+		fps,
+		config: { damping: 30, stiffness: 15, mass: 0.5 },
+	});
+	const cameraZoom = 1 + (activeLine ? CAMERA_ZOOM_INTENSITY : 0);
+
+	// Combined camera transform (no CSS transition — Remotion is frame-by-frame)
+	const cameraTransform = `
+		translateX(${targetPan * cameraPan}px)
+		scale(${cameraZoom})
+	`;
 
 	return (
 		<AbsoluteFill>
-			{/* Background */}
-			<Background type={scene.background} frame={frame} />
+			{/* Camera movement container */}
+			<AbsoluteFill
+				style={{
+					transform: cameraTransform,
+					transformOrigin: 'center center',
+				}}
+			>
+				{/* Background */}
+				<Background type={scene.background} frame={frame} />
 
-			{/* Characters */}
-			{speakersInScene.map((speaker, index) => {
-				const isActive = activeLine?.speaker === speaker;
-				const expression = isActive && activeLine ? activeLine.expression : 'normal';
+				{/* Characters */}
+				{speakersInScene.map((speaker, index) => {
+					const isActive = activeLine?.speaker === speaker;
+					const expression =
+						isActive && activeLine ? activeLine.expression : 'normal';
 
-				// Position characters evenly across the screen
-				const numSpeakers = speakersInScene.length;
-				let leftPercent = 50;
-				if (numSpeakers > 1) {
-					leftPercent = 20 + (60 / (numSpeakers - 1)) * index;
-				}
+					// Position characters evenly across the screen
+					const numSpeakers = speakersInScene.length;
+					let leftPercent = 50;
+					if (numSpeakers > 1) {
+						leftPercent =
+							20 + (60 / (numSpeakers - 1)) * index;
+					}
 
-				return (
-					<Character
-						key={speaker}
-						type={speaker}
-						expression={expression}
-						isSpeaking={isActive}
-						sceneFrame={frame}
-						speakingStartFrame={isActive && activeLine ? activeLine.startFrame - scene.startFrame : 0}
-						style={{
-							bottom: 140,
-							left: `${leftPercent}%`,
-							zIndex: isActive ? 10 : 1,
-						}}
-					/>
-				);
-			})}
+					return (
+						<Character
+							key={speaker}
+							type={speaker}
+							expression={expression}
+							isSpeaking={isActive}
+							sceneFrame={frame}
+							speakingStartFrame={
+								isActive && activeLine
+									? activeLine.startFrame -
+											scene.startFrame
+									: 0
+							}
+							style={{
+								bottom: 140,
+								left: `${leftPercent}%`,
+								zIndex: isActive ? 10 : 1,
+							}}
+						/>
+					);
+				})}
+			</AbsoluteFill>
 
 			{/* Audio tracks — render at scene level for reliable playback */}
 			{scene.dialogue.map((line, idx) => {
-				const startFrameInScene = line.startFrame - scene.startFrame;
+				const startFrameInScene =
+					line.startFrame - scene.startFrame;
 				return (
 					<Sequence
 						key={`audio-${idx}`}
 						from={startFrameInScene}
 						durationInFrames={line.durationInFrames}
 					>
-						<Audio src={staticFile(`audio/${line.audio}`)} />
+						<Audio
+							src={staticFile(`audio/${line.audio}`)}
+						/>
 					</Sequence>
 				);
 			})}
 
 			{/* Dialogue subtitles */}
 			{scene.dialogue.map((line, idx) => {
-				const startFrameInScene = line.startFrame - scene.startFrame;
+				const startFrameInScene =
+					line.startFrame - scene.startFrame;
 				return (
 					<Sequence
 						key={`sub-${idx}`}

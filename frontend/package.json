@@ -9,9 +9,17 @@
     "build:final": "cd ../backend && ./run.sh pipeline",
     "clean": "cd ../backend && ./run.sh clean"
   },
-  "keywords": ["remotion", "animation", "video", "tts"],
+  "keywords": [
+    "remotion",
+    "animation",
+    "video",
+    "tts"
+  ],
   "license": "ISC",
   "dependencies": {
+    "@remotion/google-fonts": "^4.0.467",
+    "@remotion/noise": "^4.0.467",
+    "@remotion/transitions": "^4.0.467",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "remotion": "^4.0.466"

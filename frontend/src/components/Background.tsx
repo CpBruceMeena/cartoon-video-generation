@@ -10,13 +10,15 @@ interface BackgroundProps {
 	frame?: number;
 }
 
-/** Floating cloud effect */
+/** Floating cloud effect with parallax drift */
 const Cloud: React.FC<{
 	style?: React.CSSProperties;
 	cloudFrame?: number;
 	offset?: number;
-}> = ({ style, cloudFrame = 0, offset = 0 }) => {
-	const drift = Math.sin((cloudFrame + offset) * 0.008) * 20;
+	depth?: number; // 1.0 = far, 2.0 = near (more drift)
+}> = ({ style, cloudFrame = 0, offset = 0, depth = 1 }) => {
+	const drift = Math.sin((cloudFrame + offset) * 0.008) * 20 * depth;
+	const yDrift = Math.sin((cloudFrame + offset) * 0.005) * 5 * depth;
 	return (
 		<div
 			style={{
@@ -25,7 +27,7 @@ const Cloud: React.FC<{
 				height: 60,
 				backgroundColor: 'rgba(255,255,255,0.6)',
 				borderRadius: 60,
-				transform: `translateX(${drift}px)`,
+				transform: `translateX(${drift}px) translateY(${yDrift}px)`,
 				...style,
 			}}
 		>
