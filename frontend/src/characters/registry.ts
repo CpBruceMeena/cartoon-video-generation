@@ -11,6 +11,8 @@ export interface CharacterSVGProps {
 	expression?: Expression;
 	isSpeaking?: boolean;
 	speakingFrame?: number;
+	/** Per-frame RMS amplitude (0–1) for audio-driven mouth animation */
+	amplitude?: number;
 }
 
 export interface CharacterColors {

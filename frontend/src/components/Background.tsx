@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AbsoluteFill } from 'remotion';
 import { COLORS } from '../config/constants';
 
@@ -8,6 +8,10 @@ interface BackgroundProps {
 	type: BackgroundType;
 	/** Scene-relative frame for animations */
 	frame?: number;
+	/** Camera pan X for parallax depth response */
+	cameraPanX?: number;
+	/** Camera zoom for subtle parallax depth scaling */
+	cameraZoom?: number;
 }
 
 // ─── 2.5D Depth Layers ─────────────────────────────────────────────────────
@@ -407,8 +411,11 @@ const FloorLamp: React.FC<{ frame?: number }> = ({ frame = 0 }) => {
 
 // ─── Main Background ──────────────────────────────────────────────────────
 
-export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
-	// Generate dust particles once (stable via frame-based seed)
+export const Background: React.FC<BackgroundProps> = React.memo(({ type, frame = 0, cameraPanX = 0, cameraZoom = 1 }) => {
+	// Use cameraZoom to subtly scale background depth elements
+	// Inverse to camera zoom: when camera zooms in, background pulls back slightly
+	const zoomParallax = useMemo(() => (1 - (cameraZoom - 1) * 0.15), [cameraZoom]);
+	// Generate dust particles once (stable via idempotent seed)
 	const dustParticles = React.useMemo(() => {
 		return [...Array(16)].map((_, i) => ({
 			x: 10 + (i * 37 + 7) % 80,
@@ -418,6 +425,26 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 			speed: 0.008 + (i % 6) * 0.004,
 		}));
 	}, []);
+
+	// ── Parallax depth factors ──────────────────────────────────────────
+	// Background layers move at different speeds relative to camera
+	const parallaxDepth0 = 0;       // far wall / sky — no movement
+	const parallaxDepth1 = 0.15;    // windows, posters — subtle
+	const parallaxDepth2 = 0.30;    // furniture — moderate
+	const parallaxDepth4 = 0.08;    // particles — very subtle (already animated)
+
+	// Common parallax helper: apply horizontal drift + optional zoom scaling
+	const parallaxStyle = (depth: number, baseTransform = '') => {
+		const x = cameraPanX * depth;
+		const z = depth > 0 ? zoomParallax : 1;
+		const transforms = [`translateX(${x}px)`];
+		if (z !== 1) transforms.push(`scale(${z})`);
+		return `${transforms.join(' ')}${baseTransform ? ' ' + baseTransform : ''}`;
+	};
+
+	// Reactive lighting: lamp flicker based on expression mood
+	// (controlled via lightsOn + flickerIntensity passed from parent)
+	const lampFlicker = 0.7 + Math.sin(frame * 0.15) * 0.15 + Math.sin(frame * 0.07 + 1) * 0.1;
 
 	switch (type) {
 		case 'House':
@@ -429,7 +456,7 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 						overflow: 'hidden',
 					}}
 				>
-					{/* ── DEPTH 0: Far Wall ─────────────────────────────── */}
+					{/* ── DEPTH 0: Far Wall (no parallax) ──────────────── */}
 					<div
 						style={{
 							position: 'absolute',
@@ -440,6 +467,7 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 							background: 'linear-gradient(180deg, #FFF8E7 0%, #F5E6CC 50%, #EDD9B5 100%)',
 							opacity: 0.97 + Math.sin(frame * 0.04) * 0.02,
 							zIndex: 0,
+							transform: `translateX(${cameraPanX * parallaxDepth0}px)`,
 						}}
 					>
 						{/* Wall texture — subtle vertical lines */}
@@ -484,7 +512,7 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 					</div>
 
 					{/* ── DEPTH 1: Window + Wall Decor ───────────────────── */}
-					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '70%', zIndex: 1 }}>
+					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '70%', zIndex: 1, transform: `translateX(${cameraPanX * parallaxDepth1}px)` }}>
 						{/* Window */}
 						<div
 							style={{
@@ -703,7 +731,7 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 					</div>
 
 					{/* ── DEPTH 2: Light beams from window ──────────────── */}
-					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '70%', zIndex: 2, pointerEvents: 'none' }}>
+					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '70%', zIndex: 2, pointerEvents: 'none', transform: `translateX(${cameraPanX * parallaxDepth2}px)` }}>
 						<LightBeam
 							left="62%"
 							top="22%"
@@ -725,7 +753,7 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 					</div>
 
 					{/* ── DEPTH 3: Furniture layer ──────────────────────── */}
-					<div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', zIndex: 3 }}>
+					<div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', zIndex: 3, transform: `translateX(${cameraPanX * parallaxDepth2}px)` }}>
 						{/* Floor */}
 						<div
 							style={{
@@ -925,7 +953,7 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 					</div>
 
 					{/* ── DEPTH 4: Particles (dust motes in light) ──────── */}
-					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4, pointerEvents: 'none' }}>
+					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 4, pointerEvents: 'none', transform: `translateX(${cameraPanX * parallaxDepth4}px)` }}>
 						{dustParticles.map((p, i) => (
 							<DustMote key={i} {...p} frame={frame} />
 						))}
@@ -936,94 +964,98 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 		case 'Street':
 			return (
 				<AbsoluteFill style={{ backgroundColor: COLORS.Kasukabe.Sky }}>
-					{/* Parallax clouds */}
-					<Cloud style={{ top: '5%', left: '10%', zIndex: 1 }} cloudFrame={frame} offset={0} depth={1.5} />
-					<Cloud style={{ top: '3%', right: '15%', width: 140, height: 50, zIndex: 1 }} cloudFrame={frame} offset={50} depth={1.2} />
-					<Cloud style={{ top: '10%', left: '45%', width: 160, height: 45, zIndex: 1 }} cloudFrame={frame} offset={100} depth={0.8} />
-					<Cloud style={{ top: '7%', left: '2%', width: 100, height: 35, zIndex: 1 }} cloudFrame={frame} offset={150} depth={1.8} />
+					{/* ── DEPTH 1: Sky + clouds (parallax depth=0.20) ───── */}
+					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, transform: parallaxStyle(0.20) }}>
+						<Cloud style={{ top: '5%', left: '10%', zIndex: 1 }} cloudFrame={frame} offset={0} depth={1.5} />
+						<Cloud style={{ top: '3%', right: '15%', width: 140, height: 50, zIndex: 1 }} cloudFrame={frame} offset={50} depth={1.2} />
+						<Cloud style={{ top: '10%', left: '45%', width: 160, height: 45, zIndex: 1 }} cloudFrame={frame} offset={100} depth={0.8} />
+						<Cloud style={{ top: '7%', left: '2%', width: 100, height: 35, zIndex: 1 }} cloudFrame={frame} offset={150} depth={1.8} />
 
-					{/* Sun with animated glow */}
-					<div
-						style={{
-							position: 'absolute',
-							top: '4%',
-							right: '12%',
-							width: 90,
-							height: 90,
-							borderRadius: '50%',
-							backgroundColor: '#FFF9C4',
-							boxShadow: '0 0 60px #FFF9C4, 0 0 120px rgba(255, 249, 196, 0.4), 0 0 180px rgba(255, 249, 196, 0.15)',
-							zIndex: 0,
-						}}
-					/>
+						{/* Sun with animated glow */}
+						<div
+							style={{
+								position: 'absolute',
+								top: '4%',
+								right: '12%',
+								width: 90,
+								height: 90,
+								borderRadius: '50%',
+								backgroundColor: '#FFF9C4',
+								boxShadow: '0 0 60px #FFF9C4, 0 0 120px rgba(255, 249, 196, 0.4), 0 0 180px rgba(255, 249, 196, 0.15)',
+								zIndex: 0,
+							}}
+						/>
 
-					{/* Sun rays */}
-					<div
-						style={{
-							position: 'absolute',
-							top: '4%',
-							right: '12%',
-							width: 120,
-							height: 120,
-							borderRadius: '50%',
-							background: 'radial-gradient(circle, rgba(255,249,196,0.3) 0%, transparent 70%)',
-							transform: `rotate(${frame * 0.05}deg)`,
-							zIndex: 0,
-						}}
-					/>
-
-					{/* Trees layer */}
-					<div style={{ position: 'absolute', bottom: '30%', width: '100%', height: '20%', zIndex: 2 }}>
-						<Tree left="3%" height={120} />
-						<Tree left="82%" height={140} color="#4E342E" />
-						<Tree left="90%" height={100} />
+						{/* Sun rays */}
+						<div
+							style={{
+								position: 'absolute',
+								top: '4%',
+								right: '12%',
+								width: 120,
+								height: 120,
+								borderRadius: '50%',
+								background: 'radial-gradient(circle, rgba(255,249,196,0.3) 0%, transparent 70%)',
+								transform: `rotate(${frame * 0.05}deg)`,
+								zIndex: 0,
+							}}
+						/>
 					</div>
 
-					{/* City silhouette */}
-					<div
-						style={{
-							position: 'absolute',
-							bottom: '38%',
-							width: '100%',
-							height: '15%',
-							display: 'flex',
-							alignItems: 'flex-end',
-							justifyContent: 'space-around',
-							zIndex: 1,
-						}}
-					>
-						{[...Array(10)].map((_, i) => (
-							<div
-								key={i}
-								style={{
-									width: `${10 + Math.random() * 8}%`,
-									height: `${40 + Math.random() * 60}%`,
-									backgroundColor: '#E8E0D0',
-									border: '1px solid #D7CCC8',
-									borderRadius: '3px 3px 0 0',
-									position: 'relative',
-								}}
-							>
-								{[...Array(4)].map((_, j) => (
-									<div
-										key={j}
-										style={{
-											position: 'absolute',
-											top: `${12 + j * 22}%`,
-											left: `${15 + (j % 2) * 50}%`,
-											width: 12,
-											height: 16,
-											backgroundColor: j % 2 === 0 ? '#FFE082' : '#BBDEFB',
-											borderRadius: 1,
-											opacity: 0.7,
-										}}
-									/>
-								))}
-							</div>
-						))}
+					{/* ── DEPTH 2: City silhouette + trees (parallax depth=0.35) ── */}
+					<div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', zIndex: 2, transform: parallaxStyle(0.35) }}>
+						{/* City silhouette */}
+						<div
+							style={{
+								position: 'absolute',
+								bottom: '38%',
+								width: '100%',
+								height: '15%',
+								display: 'flex',
+								alignItems: 'flex-end',
+								justifyContent: 'space-around',
+							}}
+						>
+							{[...Array(10)].map((_, i) => (
+								<div
+									key={i}
+									style={{
+										width: `${10 + Math.random() * 8}%`,
+										height: `${40 + Math.random() * 60}%`,
+										backgroundColor: '#E8E0D0',
+										border: '1px solid #D7CCC8',
+										borderRadius: '3px 3px 0 0',
+										position: 'relative',
+									}}
+								>
+									{[...Array(4)].map((_, j) => (
+										<div
+											key={j}
+											style={{
+												position: 'absolute',
+												top: `${12 + j * 22}%`,
+												left: `${15 + (j % 2) * 50}%`,
+												width: 12,
+												height: 16,
+												backgroundColor: j % 2 === 0 ? '#FFE082' : '#BBDEFB',
+												borderRadius: 1,
+												opacity: 0.7,
+											}}
+										/>
+									))}
+								</div>
+							))}
+						</div>
+
+						{/* Trees layer */}
+						<div style={{ position: 'absolute', bottom: '30%', width: '100%', height: '20%' }}>
+							<Tree left="3%" height={120} />
+							<Tree left="82%" height={140} color="#4E342E" />
+							<Tree left="90%" height={100} />
+						</div>
 					</div>
 
-					{/* Road */}
+					{/* ── DEPTH 3: Road (no parallax — closest to camera, acts as frame) ── */}
 					<div
 						style={{
 							position: 'absolute',
@@ -1046,7 +1078,6 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 								borderTop: '2px solid #9E9E9E',
 							}}
 						/>
-						{/* Dashed center line */}
 						{[0, 1, 2, 3, 4, 5, 6].map((i) => (
 							<div
 								key={i}
@@ -1065,96 +1096,102 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 				</AbsoluteFill>
 			);
 
-		case 'SunsetRooftop':
+	case 'SunsetRooftop':
 			return (
 				<AbsoluteFill style={{ background: COLORS.Sunset.Sky }}>
-					{/* Sky gradient layers */}
-					<div
-						style={{
-							position: 'absolute',
-							top: 0,
-							left: 0,
-							width: '100%',
-							height: '100%',
-							background: 'linear-gradient(180deg, #1A237E 0%, #283593 15%, #FF6B35 40%, #FF7E5F 55%, #FEB47B 70%, #FFD8A8 85%, #FFE0B2 100%)',
-						}}
-					/>
-
-					{/* Sun */}
-					<div
-						style={{
-							position: 'absolute',
-							bottom: '32%',
-							right: '20%',
-							width: 180,
-							height: 180,
-							borderRadius: '50%',
-							background: 'radial-gradient(circle, #FFD54F 0%, #FF8A65 40%, #FF6B35 70%, transparent 100%)',
-							boxShadow: '0 0 100px #FF6B35, 0 0 200px rgba(255, 107, 53, 0.4), 0 0 300px rgba(255, 107, 53, 0.2)',
-						}}
-					/>
-
-					{/* Stars twinkling at top */}
-					{[...Array(8)].map((_, i) => (
+					{/* ── DEPTH 0: Sky + sun (no parallax) ──────────────── */}
+					<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: parallaxStyle(0) }}>
+						{/* Sky gradient layers */}
 						<div
-							key={i}
 							style={{
 								position: 'absolute',
-								top: `${2 + i * 3}%`,
-								left: `${5 + i * 12}%`,
-								width: 2 + (i % 2),
-								height: 2 + (i % 2),
-								borderRadius: '50%',
-								backgroundColor: '#fff',
-								opacity: 0.2 + Math.sin(frame * 0.02 + i * 2) * 0.15,
+								top: 0,
+								left: 0,
+								width: '100%',
+								height: '100%',
+								background: 'linear-gradient(180deg, #1A237E 0%, #283593 15%, #FF6B35 40%, #FF7E5F 55%, #FEB47B 70%, #FFD8A8 85%, #FFE0B2 100%)',
 							}}
 						/>
-					))}
 
-					{/* Distant city silhouette */}
-					<div
-						style={{
-							position: 'absolute',
-							bottom: '18%',
-							width: '100%',
-							height: '20%',
-							display: 'flex',
-							alignItems: 'flex-end',
-							justifyContent: 'space-evenly',
-						}}
-					>
+						{/* Sun */}
+						<div
+							style={{
+								position: 'absolute',
+								bottom: '32%',
+								right: '20%',
+								width: 180,
+								height: 180,
+								borderRadius: '50%',
+								background: 'radial-gradient(circle, #FFD54F 0%, #FF8A65 40%, #FF6B35 70%, transparent 100%)',
+								boxShadow: '0 0 100px #FF6B35, 0 0 200px rgba(255, 107, 53, 0.4), 0 0 300px rgba(255, 107, 53, 0.2)',
+							}}
+						/>
+
+						{/* Stars twinkling at top */}
 						{[...Array(8)].map((_, i) => (
 							<div
 								key={i}
 								style={{
-									width: `${10 + Math.random() * 8}%`,
-									height: `${30 + Math.random() * 70}%`,
-									backgroundColor: '#1A1A2E',
-									borderRadius: '2px 2px 0 0',
-									opacity: 0.8,
-									position: 'relative' as const,
+									position: 'absolute',
+									top: `${2 + i * 3}%`,
+									left: `${5 + i * 12}%`,
+									width: 2 + (i % 2),
+									height: 2 + (i % 2),
+									borderRadius: '50%',
+									backgroundColor: '#fff',
+									opacity: 0.2 + Math.sin(frame * 0.02 + i * 2) * 0.15,
 								}}
-							>
-								{[...Array(3)].map((_, j) => (
-									<div
-										key={j}
-										style={{
-											position: 'absolute',
-											top: `${15 + j * 25}%`,
-											left: `${20 + (j % 2) * 45}%`,
-											width: 8,
-											height: 10,
-											backgroundColor: '#FFE082',
-											opacity: 0.4 + Math.sin(frame * 0.03 + i + j) * 0.15,
-											borderRadius: 1,
-										}}
-									/>
-								))}
-							</div>
+							/>
 						))}
 					</div>
 
-					{/* Rooftop edge */}
+					{/* ── DEPTH 1: Distant city silhouette (parallax depth=0.12) ── */}
+					<div style={{ position: 'absolute', bottom: '18%', width: '100%', height: '20%', zIndex: 1, transform: parallaxStyle(0.12) }}>
+						<div
+							style={{
+								position: 'absolute',
+								top: 0,
+								left: 0,
+								width: '100%',
+								height: '100%',
+								display: 'flex',
+								alignItems: 'flex-end',
+								justifyContent: 'space-evenly',
+							}}
+						>
+							{[...Array(8)].map((_, i) => (
+								<div
+									key={i}
+									style={{
+										width: `${10 + Math.random() * 8}%`,
+										height: `${30 + Math.random() * 70}%`,
+										backgroundColor: '#1A1A2E',
+										borderRadius: '2px 2px 0 0',
+										opacity: 0.8,
+										position: 'relative' as const,
+									}}
+								>
+									{[...Array(3)].map((_, j) => (
+										<div
+											key={j}
+											style={{
+												position: 'absolute',
+												top: `${15 + j * 25}%`,
+												left: `${20 + (j % 2) * 45}%`,
+												width: 8,
+												height: 10,
+												backgroundColor: '#FFE082',
+												opacity: 0.4 + Math.sin(frame * 0.03 + i + j) * 0.15,
+												borderRadius: 1,
+											}}
+										/>
+									))}
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* ── DEPTH 2: Rooftop edge (no parallax — frame anchor) ── */}
 					<div
 						style={{
 							position: 'absolute',
@@ -1207,4 +1244,4 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 		default:
 			return <AbsoluteFill style={{ backgroundColor: 'white' }} />;
 	}
-};
+});

@@ -8,6 +8,8 @@ export interface CharacterSVGProps {
 	expression?: Expression;
 	isSpeaking?: boolean;
 	speakingFrame?: number;
+	/** Per-frame RMS amplitude (0–1) for audio-driven mouth animation */
+	amplitude?: number;
 }
 
 // ─── Mouth Speaking Animation ─────────────────────────────────────────────
@@ -18,14 +20,23 @@ export function useMouthOpen(
 	opts?: {
 		frequency?: number;
 		amplitude?: number;
+		externalAmplitude?: number;
 	},
 ) {
 	const frequency = opts?.frequency ?? 0.25;
 	const amplitude = opts?.amplitude ?? 10;
+	const externalAmplitude = opts?.externalAmplitude ?? 0;
 
-	const mouthOpen = isSpeaking
-		? Math.abs(Math.sin(speakingFrame * frequency * Math.PI * 2))
+	// If external amplitude data is available (from audio), use it;
+	// otherwise fall back to sine-wave approximation.
+	// externalAmplitude is 0–1, scale it to the amplitude config range.
+	const rawOpen = isSpeaking
+		? externalAmplitude > 0
+			? Math.min(1, externalAmplitude * 1.8) // boost for visual clarity
+			: Math.abs(Math.sin(speakingFrame * frequency * Math.PI * 2))
 		: 0;
+
+	const mouthOpen = rawOpen;
 	const mouthOpenAmount = mouthOpen * amplitude;
 	const showInterior = mouthOpen > 0.3;
 

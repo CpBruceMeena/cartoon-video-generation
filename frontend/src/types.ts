@@ -7,6 +7,8 @@ export interface DialogueLine {
 	audio: string | null;
 	startFrame: number;
 	durationInFrames: number;
+	/** Per-frame RMS amplitude values (0-1) for lip-sync mouth animation */
+	amplitude?: number[];
 }
 
 export interface SceneData {

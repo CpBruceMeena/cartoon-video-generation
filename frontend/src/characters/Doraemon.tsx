@@ -34,12 +34,13 @@ const BODY_LEAN: Record<string, number> = {
 	expression = 'normal',
 	isSpeaking = false,
 	speakingFrame = 0,
+	amplitude = 0,
 }) => {
 	// ── Shared hooks ──────────────────────────────────────────────────────
 	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
 		isSpeaking,
 		speakingFrame,
-		cfg.mouth,
+		{ ...cfg.mouth, externalAmplitude: amplitude },
 	);
 
 	// ── EXPRESSION MORPHING ──────────────────────────────────────────────

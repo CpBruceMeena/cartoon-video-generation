@@ -11,9 +11,11 @@ Usage:
 """
 
 import json
+import math
 import shutil
 import subprocess
 import sys
+import struct
 import time
 import wave
 from pathlib import Path
@@ -104,9 +106,13 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
                 duration_frames = max(24, int(duration_sec * FPS))
                 print(f"  ⏩ No voice profile for {line['speaker']}, using estimated {duration_frames} frames")
 
+            # ── Extract per-frame amplitude for lip-sync ────────────────
+            amplitude = _extract_amplitude_envelope(audio_path, duration_frames)
+
             line["audio"] = audio_filename
             line["startFrame"] = global_frame
             line["durationInFrames"] = duration_frames
+            line["amplitude"] = amplitude
             global_frame += duration_frames
             scene_duration += duration_frames
 
@@ -150,6 +156,100 @@ def render_video(script_data: dict) -> bool:
 
 
 # ─── Cleanup ────────────────────────────────────────────────────────────────
+
+
+def _extract_amplitude_envelope(audio_path: Path, num_frames: int) -> list[float]:
+    """Extract per-frame RMS amplitude from a WAV file for lip-sync.
+
+    Divides the audio into `num_frames` chunks and calculates the RMS
+    (root-mean-square) amplitude for each chunk. Returns a list of floats
+    in the 0–1 range, where 0 = silence and 1 = peak amplitude.
+
+    Falls back to a gentle sine-wave approximation if amplitude extraction
+    fails (e.g., no audio file, corrupted WAV, or non-WAV format).
+    """
+    if not audio_path or not audio_path.exists():
+        return _sine_fallback(num_frames)
+
+    try:
+        with wave.open(str(audio_path), "r") as wf:
+            n_channels = wf.getnchannels()
+            sampwidth = wf.getsampwidth()
+            framerate = wf.getframerate()
+            n_frames = wf.getnframes()
+
+            if n_frames == 0 or framerate == 0:
+                return _sine_fallback(num_frames)
+
+            raw = wf.readframes(n_frames)
+            # Parse samples based on sample width
+            if sampwidth == 1:
+                fmt = "b"  # signed 8-bit
+                samples = list(struct.iter_unpack(fmt, raw))
+            elif sampwidth == 2:
+                fmt = "<h"  # signed 16-bit little-endian
+                samples = list(struct.iter_unpack(fmt, raw))
+            elif sampwidth == 4:
+                fmt = "<i"  # signed 32-bit little-endian
+                samples = list(struct.iter_unpack(fmt, raw))
+            else:
+                return _sine_fallback(num_frames)
+
+            # Flatten multi-channel: take only first channel and convert to float
+            values = [s[0] for i, s in enumerate(samples) if i % n_channels == 0]
+            total_samples = len(values)
+
+            if total_samples == 0:
+                return _sine_fallback(num_frames)
+
+            # Normalize to -1..1 range based on sample width
+            if sampwidth == 1:
+                values = [v / 127.0 for v in values]
+            elif sampwidth == 2:
+                values = [v / 32768.0 for v in values]
+            elif sampwidth == 4:
+                values = [v / 2147483648.0 for v in values]
+
+            # Calculate RMS per frame chunk
+            amplitude = []
+            for frame_idx in range(num_frames):
+                start_sample = int(frame_idx * total_samples / num_frames)
+                end_sample = int((frame_idx + 1) * total_samples / num_frames)
+                chunk = values[start_sample:end_sample]
+                if not chunk:
+                    amplitude.append(0.0)
+                else:
+                    # RMS
+                    sum_sq = sum(v * v for v in chunk)
+                    rms = math.sqrt(sum_sq / len(chunk))
+                    amplitude.append(rms)
+
+            # Normalize to 0–1 (with slight headroom; typical max RMS ~0.3-0.5 for speech)
+            max_rms = max(amplitude) if amplitude else 1.0
+            if max_rms > 0:
+                # Scale so the 95th percentile maps to ~0.9, leaving headroom
+                sorted_amps = sorted(amplitude)
+                p95 = sorted_amps[int(len(sorted_amps) * 0.95)] if len(sorted_amps) > 5 else max_rms
+                scale = 0.9 / p95 if p95 > 0 else 1.0
+                amplitude = [min(1.0, a * scale) for a in amplitude]
+
+            # Apply a 3-frame moving average for smoothness
+            smoothed = []
+            for i in range(len(amplitude)):
+                start = max(0, i - 1)
+                end = min(len(amplitude), i + 2)
+                smoothed.append(sum(amplitude[start:end]) / (end - start))
+
+            return smoothed
+
+    except Exception as e:
+        print(f"     ⚠️  Amplitude extraction failed ({e}), using sine fallback")
+        return _sine_fallback(num_frames)
+
+
+def _sine_fallback(num_frames: int) -> list[float]:
+    """Generate a gentle sine-wave amplitude pattern as fallback."""
+    return [0.3 + 0.25 * math.sin(i * 0.35) for i in range(num_frames)]
 
 
 def _write_silent_wav(path: Path, duration_sec: float = 3.0) -> None:

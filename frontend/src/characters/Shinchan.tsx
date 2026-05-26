@@ -45,12 +45,13 @@ const EXPR_CONFIG: Record<string, { browAngle: number; browAngleR: number; browY
 	expression = 'normal',
 	isSpeaking = false,
 	speakingFrame = 0,
+	amplitude = 0,
 }) => {
 	// ── Shared hooks ──────────────────────────────────────────────────────
 	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
 		isSpeaking,
 		speakingFrame,
-		cfg.mouth,
+		{ ...cfg.mouth, externalAmplitude: amplitude },
 	);
 
 	const { isBlinking, blinkH } = useEyeBlink(speakingFrame, expression, cfg.eyeBlink);

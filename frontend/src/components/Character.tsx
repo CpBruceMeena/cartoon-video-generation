@@ -15,13 +15,15 @@ interface CharacterProps {
 	speakingStartFrame?: number;
 	/** Facing direction: 1 = right (default), -1 = left (mirrored) */
 	facing?: 1 | -1;
+	/** Per-frame amplitude (0–1) for audio-driven mouth animation */
+	amplitude?: number;
 }
 
 /**
  * Character component — wraps the SVG with entrance animation,
  * speaking indicators, expression effects, and idle movement.
  */
-export const Character: React.FC<CharacterProps> = ({
+export const Character: React.FC<CharacterProps> = React.memo(({
 	type,
 	style,
 	expression = 'normal',
@@ -30,6 +32,7 @@ export const Character: React.FC<CharacterProps> = ({
 	sceneFrame = 0,
 	speakingStartFrame = 0,
 	facing = 1,
+	amplitude = 0,
 }) => {
 	const normalized = normalizeCharacterName(type);
 	const SvgComponent = getCharacterSvg(normalized);
@@ -208,6 +211,7 @@ export const Character: React.FC<CharacterProps> = ({
 						expression={expression}
 						isSpeaking={isSpeaking}
 						speakingFrame={speakingProgress}
+						amplitude={amplitude}
 					/>
 				) : (
 					<div
@@ -262,4 +266,4 @@ export const Character: React.FC<CharacterProps> = ({
 			</div>
 		</div>
 	);
-};
+});
