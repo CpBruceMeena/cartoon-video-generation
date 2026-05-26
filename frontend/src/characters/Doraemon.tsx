@@ -17,24 +17,24 @@ export const DoraemonSVG: React.FC<CharacterSVGProps> = ({ expression = 'normal'
 		cfg.mouth,
 	);
 
-	// Doraemon uses scale-based eye animation (not height-based like humans)
-	const eyeScale = expression === 'shocked' ? 1.4 : expression === 'happy' ? 0.82 : 1;
+	// Doraemon uses scale-based eye animation
+	const eyeScale = expression === 'shocked' ? 1.45 : expression === 'happy' ? 0.8 : 1;
 	const blinkCycle = speakingFrame % cfg.eyeBlink.cycleLength;
 	const isBlinking = blinkCycle > cfg.eyeBlink.cycleLength - 7 && blinkCycle < cfg.eyeBlink.cycleLength - 1;
 	const blinkScale = isBlinking ? 0.08 : eyeScale;
 	const showPupils = !isBlinking;
 
-	// Ear wiggle: subtle movement when speaking
+	// Ear wiggle
 	const earWiggle = isSpeaking ? Math.sin(speakingFrame * 0.2) * 3 : Math.sin(speakingFrame * 0.04) * 1;
 
-	// Pocket glow: gentle pulse
+	// Pocket glow
 	const pocketGlow = isSpeaking ? 0.5 + Math.sin(speakingFrame * 0.15) * 0.2 : 0.3;
 
-	// Bell swing: gentle sway from movement
+	// Bell swing
 	const bellSwing = isSpeaking ? Math.sin(speakingFrame * 0.12) * 4 : Math.sin(speakingFrame * 0.03) * 2;
 
-	// Head tilt: subtle expression-based tilt
-	const headTilt = expression === 'happy' ? 3 : expression === 'angry' ? -2 : expression === 'shocked' ? 0 : 0;
+	// Head tilt
+	const headTilt = expression === 'happy' ? 4 : expression === 'angry' ? -3 : expression === 'shocked' ? 0 : 0;
 
 	const { leftArmAngle, rightArmAngle } = useArmAnimation(
 		isSpeaking,
@@ -50,211 +50,208 @@ export const DoraemonSVG: React.FC<CharacterSVGProps> = ({ expression = 'normal'
 		cfg.bodyMovement,
 	);
 
-	// --- Mouth path - BIG semicircle below white face (Doraemon's trademark) ---
+	// ── Mouth path — wide semicircle below white face ─────────────────────
 	const getMouthPath = () => {
 		if (isSpeaking) {
 			const baseY = 138 + mouthOpenAmount;
 			switch (expression) {
-				case 'happy': return `M58 128 Q100 ${baseY + 22} 142 128`;
-				case 'angry': return `M58 118 Q100 ${baseY - 10} 142 118`;
-				case 'shocked': return `M72 114 Q100 ${baseY + 6} 128 114`;
-				default: return `M58 124 Q100 ${baseY + 16} 142 124`;
+				case 'happy': return `M56 128 Q100 ${baseY + 24} 144 128`;
+				case 'angry': return `M56 118 Q100 ${baseY - 12} 144 118`;
+				case 'shocked': return `M70 114 Q100 ${baseY + 8} 130 114`;
+				default: return `M56 124 Q100 ${baseY + 18} 144 124`;
 			}
 		}
 		switch (expression) {
-			case 'happy': return 'M58 128 Q100 178 142 128';
-			case 'angry': return 'M58 118 Q100 106 142 118';
-			case 'shocked': return 'M72 114 Q100 152 128 114';
-			default: return 'M58 124 Q100 168 142 124';
+			case 'happy': return 'M56 128 Q100 182 144 128';
+			case 'angry': return 'M56 118 Q100 104 144 118';
+			case 'shocked': return 'M70 114 Q100 156 130 114';
+			default: return 'M56 124 Q100 172 144 124';
 		}
 	};
 
 	const showMouthInterior = isSpeaking && mouthOpen > 0.3;
 	const mouthFill = showMouthInterior ? '#1A1A1A' : expression === 'shocked' ? '#333' : 'none';
 
+	const STROKE = {
+		thick: '#1565C0',
+		dark: '#0D47A1',
+		thin: '#444',
+	};
+
 	return (
-		<svg width="280" height="300" viewBox="0 0 200 220">
+		<svg width='280' height='300' viewBox='0 0 200 220'>
 			<defs>
 				{/* Body gradient */}
-				<radialGradient id="doraemon-body" cx="50%" cy="40%" r="65%">
-					<stop offset="0%" stopColor="#42A5F5" />
-					<stop offset="60%" stopColor="#1E88E5" />
-					<stop offset="100%" stopColor="#1565C0" />
+				<radialGradient id='doraemon-body' cx='50%' cy='35%' r='70%'>
+					<stop offset='0%' stopColor='#42A5F5' />
+					<stop offset='60%' stopColor='#1E88E5' />
+					<stop offset='100%' stopColor='#1565C0' />
 				</radialGradient>
 				{/* Head gradient */}
-				<radialGradient id="doraemon-head" cx="50%" cy="35%" r="70%">
-					<stop offset="0%" stopColor="#42A5F5" />
-					<stop offset="60%" stopColor="#1E88E5" />
-					<stop offset="100%" stopColor="#1565C0" />
-				</radialGradient>
-				{/* Belly gradient */}
-				<radialGradient id="doraemon-belly" cx="50%" cy="45%" r="60%">
-					<stop offset="0%" stopColor="#FFFFFF" />
-					<stop offset="80%" stopColor="#F5F5F5" />
-					<stop offset="100%" stopColor="#E0E0E0" />
+				<radialGradient id='doraemon-head' cx='50%' cy='30%' r='75%'>
+					<stop offset='0%' stopColor='#42A5F5' />
+					<stop offset='60%' stopColor='#1E88E5' />
+					<stop offset='100%' stopColor='#1565C0' />
 				</radialGradient>
 				{/* Face gradient */}
-				<radialGradient id="doraemon-face" cx="50%" cy="40%" r="65%">
-					<stop offset="0%" stopColor="#FFFFFF" />
-					<stop offset="80%" stopColor="#FAFAFA" />
-					<stop offset="100%" stopColor="#EEEEEE" />
+				<radialGradient id='doraemon-face' cx='50%' cy='40%' r='65%'>
+					<stop offset='0%' stopColor='#FFFFFF' />
+					<stop offset='80%' stopColor='#FAFAFA' />
+					<stop offset='100%' stopColor='#F0F0F0' />
+				</radialGradient>
+				{/* Belly gradient */}
+				<radialGradient id='doraemon-belly' cx='50%' cy='45%' r='60%'>
+					<stop offset='0%' stopColor='#FFFFFF' />
+					<stop offset='80%' stopColor='#F5F5F5' />
+					<stop offset='100%' stopColor='#EEEEEE' />
 				</radialGradient>
 				{/* Bell gradient */}
-				<radialGradient id="doraemon-bell" cx="40%" cy="35%" r="60%">
-					<stop offset="0%" stopColor="#FFEE58" />
-					<stop offset="100%" stopColor="#FDD835" />
+				<radialGradient id='doraemon-bell' cx='40%' cy='35%' r='60%'>
+					<stop offset='0%' stopColor='#FFEE58' />
+					<stop offset='100%' stopColor='#FDD835' />
 				</radialGradient>
-				{/* Body shadow */}
-				<filter id="doraemon-shadow">
-					<feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000" floodOpacity="0.15" />
+				{/* Shadow filter */}
+				<filter id='doraemon-shadow'>
+					<feDropShadow dx='0' dy='5' stdDeviation='4' floodColor='#000' floodOpacity='0.18' />
 				</filter>
 			</defs>
 
-			<g filter="url(#doraemon-shadow)" transform={`translate(0, ${bodyBounce})`}>
-				{/* === BODY === */}
-				<ellipse cx="100" cy="130" rx="75" ry="68" fill="url(#doraemon-body)" stroke="#1565C0" strokeWidth="2.5" />
+			<g filter='url(#doraemon-shadow)' transform={`translate(0, ${bodyBounce})`}>
+				{/* === BODY — rounder === */}
+				<ellipse cx='100' cy='130' rx='78' ry='70' fill='url(#doraemon-body)' stroke={STROKE.dark} strokeWidth='3.5' />
 
 				{/* === WHITE BELLY === */}
-				<ellipse cx="100" cy="148" rx="50" ry="42" fill="url(#doraemon-belly)" stroke="#E0E0E0" strokeWidth="1.5" />
+				<ellipse cx='100' cy='148' rx='52' ry='44' fill='url(#doraemon-belly)' stroke='#E0E0E0' strokeWidth='2' />
 
 				{/* === GADGET POUCH === */}
-				<ellipse cx="100" cy="158" rx="32" ry="14" fill="#E3F2FD" stroke="#90CAF9" strokeWidth="1.5" />
-				{/* Pouch opening line */}
-				<path d="M72 158 Q100 172 128 158" fill="#E3F2FD" stroke="#90CAF9" strokeWidth="1" />
-				<path d="M72 156 Q100 168 128 156" fill="none" stroke="#BBDEFB" strokeWidth="0.5" />
+				<ellipse cx='100' cy='160' rx='34' ry='15' fill='#E3F2FD' stroke='#90CAF9' strokeWidth='2' />
+				{/* Pouch opening */}
+				<path d='M70 160 Q100 176 130 160' fill='#E3F2FD' stroke='#90CAF9' strokeWidth='1.5' />
+				<path d='M70 158 Q100 172 130 158' fill='none' stroke='#BBDEFB' strokeWidth='1' />
 
 				{/* === COLLAR === */}
-				<rect x="52" y="100" width="96" height="15" rx="7.5" fill="#E53935" stroke="#B71C1C" strokeWidth="2" />
-				<rect x="55" y="101" width="90" height="4" rx="2" fill="#EF5350" opacity="0.6" />
+				<rect x='48' y='100' width='104' height='16' rx='8' fill='#E53935' stroke='#B71C1C' strokeWidth={3} />
+				<rect x='50' y='101' width='100' height='5' rx='2.5' fill='#EF5350' opacity='0.5' />
 
-				{/* === ARMS (animated) === */}
-				{/* Left arm + paw - longer arm with bigger paw */}
-				<g transform={`rotate(${leftArmAngle}, 25, 130)`}>
-					<ellipse cx="16" cy="128" rx="16" ry="36" fill="url(#doraemon-body)" stroke="#1565C0" strokeWidth="2" />
-					<circle cx="16" cy="160" r="13" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-					<circle cx="14" cy="156" r="2.5" fill="#FFCCBC" opacity="0.6" />
-					<circle cx="18" cy="162" r="2.5" fill="#FFCCBC" opacity="0.6" />
-					<circle cx="14" cy="165" r="2" fill="#FFCCBC" opacity="0.6" />
+				{/* === ARMS (animated) — rounder paws === */}
+				<g transform={`rotate(${leftArmAngle}, 22, 130)`}>
+					<ellipse cx='14' cy='128' rx='18' ry='38' fill='url(#doraemon-body)' stroke={STROKE.dark} strokeWidth='3' />
+					<circle cx='14' cy='162' r='14' fill='white' stroke='#E0E0E0' strokeWidth='2' />
+					{/* Paw pads */}
+					<circle cx='12' cy='158' r='3' fill='#FFCCBC' opacity='0.6' />
+					<circle cx='17' cy='164' r='3' fill='#FFCCBC' opacity='0.6' />
+					<circle cx='12' cy='168' r='2.5' fill='#FFCCBC' opacity='0.6' />
 				</g>
 
-				{/* Right arm + paw - longer arm with bigger paw */}
-				<g transform={`rotate(${rightArmAngle}, 175, 130)`}>
-					<ellipse cx="184" cy="128" rx="16" ry="36" fill="url(#doraemon-body)" stroke="#1565C0" strokeWidth="2" />
-					<circle cx="184" cy="160" r="13" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-					<circle cx="182" cy="156" r="2.5" fill="#FFCCBC" opacity="0.6" />
-					<circle cx="186" cy="162" r="2.5" fill="#FFCCBC" opacity="0.6" />
-					<circle cx="186" cy="165" r="2" fill="#FFCCBC" opacity="0.6" />
+				<g transform={`rotate(${rightArmAngle}, 178, 130)`}>
+					<ellipse cx='186' cy='128' rx='18' ry='38' fill='url(#doraemon-body)' stroke={STROKE.dark} strokeWidth='3' />
+					<circle cx='186' cy='162' r='14' fill='white' stroke='#E0E0E0' strokeWidth='2' />
+					<circle cx='184' cy='158' r='3' fill='#FFCCBC' opacity='0.6' />
+					<circle cx='189' cy='164' r='3' fill='#FFCCBC' opacity='0.6' />
+					<circle cx='184' cy='168' r='2.5' fill='#FFCCBC' opacity='0.6' />
 				</g>
 
-				{/* === FEET === */}
-				<ellipse cx="72" cy="192" rx="24" ry="14" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-				<ellipse cx="128" cy="192" rx="24" ry="14" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-				{/* Foot toes */}
-				<circle cx="62" cy="192" r="3" fill="none" stroke="#E0E0E0" strokeWidth="1" />
-				<circle cx="82" cy="192" r="3" fill="none" stroke="#E0E0E0" strokeWidth="1" />
-				<circle cx="118" cy="192" r="3" fill="none" stroke="#E0E0E0" strokeWidth="1" />
-				<circle cx="138" cy="192" r="3" fill="none" stroke="#E0E0E0" strokeWidth="1" />
+				{/* === FEET — rounder === */}
+				<ellipse cx='70' cy='196' rx='26' ry='15' fill='white' stroke='#E0E0E0' strokeWidth='2.5' />
+				<ellipse cx='130' cy='196' rx='26' ry='15' fill='white' stroke='#E0E0E0' strokeWidth='2.5' />
+				{/* Toes */}
+				<circle cx='58' cy='196' r='4' fill='none' stroke='#E0E0E0' strokeWidth='1.5' />
+				<circle cx='82' cy='196' r='4' fill='none' stroke='#E0E0E0' strokeWidth='1.5' />
+				<circle cx='118' cy='196' r='4' fill='none' stroke='#E0E0E0' strokeWidth='1.5' />
+				<circle cx='142' cy='196' r='4' fill='none' stroke='#E0E0E0' strokeWidth='1.5' />
 
 				{/* === HEAD (with tilt) === */}
 				<g transform={`rotate(${headTilt}, 100, 72)`}>
-					<circle cx="100" cy="72" r="58" fill="url(#doraemon-head)" stroke="#1565C0" strokeWidth="2.5" />
+					{/* Head — bigger circle */}
+					<circle cx='100' cy='72' r='62' fill='url(#doraemon-head)' stroke={STROKE.dark} strokeWidth='3.5' />
 
-				{/* === FACE (white oval) === */}
-				<ellipse cx="100" cy="72" rx="46" ry="44" fill="url(#doraemon-face)" stroke="#E0E0E0" strokeWidth="1" />
+					{/* White face oval */}
+					<ellipse cx='100' cy='72' rx='50' ry='48' fill='url(#doraemon-face)' stroke='#E0E0E0' strokeWidth='2' />
 
-				{/* === INNER EARS (with wiggle) === */}
-				<g transform={`rotate(${-earWiggle}, 55, 32)`}>
-					<circle cx="55" cy="32" r="15" fill="url(#doraemon-head)" stroke="#1565C0" strokeWidth="1.5" />
-					<circle cx="55" cy="32" r="10" fill="#90CAF9" />
-					<circle cx="53" cy="30" r="4" fill="#64B5F6" opacity="0.5" />
+					{/* Inner ears */}
+					<g transform={`rotate(${-earWiggle}, 52, 28)`}>
+						<circle cx='52' cy='28' r='18' fill='url(#doraemon-head)' stroke={STROKE.dark} strokeWidth='2.5' />
+						<circle cx='52' cy='28' r='12' fill='#90CAF9' />
+						<circle cx='50' cy='26' r='5' fill='#64B5F6' opacity='0.5' />
+					</g>
+					<g transform={`rotate(${earWiggle}, 148, 28)`}>
+						<circle cx='148' cy='28' r='18' fill='url(#doraemon-head)' stroke={STROKE.dark} strokeWidth='2.5' />
+						<circle cx='148' cy='28' r='12' fill='#90CAF9' />
+						<circle cx='150' cy='26' r='5' fill='#64B5F6' opacity='0.5' />
+					</g>
+
+					{/* Eyes — bigger, more expressive */}
+					<ellipse cx='76' cy='62' rx={14 * blinkScale} ry={17 * blinkScale} fill='white' stroke={STROKE.thin} strokeWidth='2.5' />
+					<ellipse cx='124' cy='62' rx={14 * blinkScale} ry={17 * blinkScale} fill='white' stroke={STROKE.thin} strokeWidth='2.5' />
+
+					{showPupils && (
+						<>
+							<circle cx='79' cy='65' r='7' fill='#1A1A1A' />
+							<circle cx='121' cy='65' r='7' fill='#1A1A1A' />
+							<circle cx='81' cy='61' r='3' fill='white' />
+							<circle cx='119' cy='61' r='3' fill='white' />
+							<circle cx='77' cy='68' r='1.5' fill='white' opacity='0.6' />
+							<circle cx='123' cy='68' r='1.5' fill='white' opacity='0.6' />
+						</>
+					)}
+
+					{/* Nose — red, slightly bigger */}
+					<ellipse cx='100' cy='78' rx='9' ry='8' fill='#E53935' stroke='#B71C1C' strokeWidth='2' />
+					<ellipse cx='97' cy='75' rx='3.5' ry='2.5' fill='#FF8A80' opacity='0.8' />
+
+					{/* Mouth — dark outline */}
+					<path d={getMouthPath()} fill={mouthFill} stroke='#333' strokeWidth='3' strokeLinecap='round' />
+
+					{showMouthInterior && (
+						<ellipse cx='100' cy={146 + mouthOpenAmount * 0.4} rx='18' ry='7' fill='#FF7979' opacity='0.5' />
+					)}
 				</g>
-				<g transform={`rotate(${earWiggle}, 145, 32)`}>
-					<circle cx="145" cy="32" r="15" fill="url(#doraemon-head)" stroke="#1565C0" strokeWidth="1.5" />
-					<circle cx="145" cy="32" r="10" fill="#90CAF9" />
-					<circle cx="143" cy="30" r="4" fill="#64B5F6" opacity="0.5" />
-				</g>
 
-				{/* === EYES === */}
-				<ellipse cx="78" cy="62" rx={12 * blinkScale} ry={15 * blinkScale} fill="white" stroke="#444" strokeWidth="1.5" />
-				<ellipse cx="122" cy="62" rx={12 * blinkScale} ry={15 * blinkScale} fill="white" stroke="#444" strokeWidth="1.5" />
-
-				{showPupils && (
-					<>
-						<circle cx="81" cy="65" r="6" fill="#1A1A1A" />
-						<circle cx="119" cy="65" r="6" fill="#1A1A1A" />
-						<circle cx="83" cy="61" r="2.5" fill="white" />
-						<circle cx="117" cy="61" r="2.5" fill="white" />
-						<circle cx="79" cy="67" r="1.2" fill="white" opacity="0.6" />
-						<circle cx="121" cy="67" r="1.2" fill="white" opacity="0.6" />
-					</>
-				)}
-
-				{/* === NOSE === */}
-				<ellipse cx="100" cy="78" rx="8" ry="7" fill="#E53935" stroke="#B71C1C" strokeWidth="1.5" />
-				<ellipse cx="97" cy="75" rx="3" ry="2" fill="#FF8A80" opacity="0.8" />
-
-				{/* === MOUTH - wide semicircle below face === */}
-				<path d={getMouthPath()} fill={mouthFill} stroke="#333" strokeWidth="2.5" strokeLinecap="round" />
-
-				{/* Mouth interior */}
-				{showMouthInterior && (
-					<>
-						<ellipse cx="100" cy={142 + mouthOpenAmount * 0.4} rx="16" ry="6" fill="#FF7979" opacity="0.5" />
-					</>
-				)}
-
-				</g>
+				{/* === NOSE TO MOUTH LINE — dark, not blue === */}
+				<line x1='100' y1='86' x2='100' y2='94' stroke='#333' strokeWidth='2' />
+				<path d='M90 92 Q100 98 110 92' fill='none' stroke='#333' strokeWidth='2.5' />
 
 				{/* === WHISKERS === */}
-				<g stroke="#333" strokeWidth="1.3" strokeLinecap="round">
-					<line x1="48" y1="70" x2="68" y2="73" />
-					<line x1="48" y1="76" x2="68" y2="78" />
-					<line x1="48" y1="82" x2="68" y2="83" />
-					<line x1="152" y1="70" x2="132" y2="73" />
-					<line x1="152" y1="76" x2="132" y2="78" />
-					<line x1="152" y1="82" x2="132" y2="83" />
+				<g stroke={STROKE.thick} strokeWidth='2' strokeLinecap='round'>
+					<line x1='44' y1='70' x2='66' y2='73' />
+					<line x1='44' y1='77' x2='66' y2='79' />
+					<line x1='44' y1='84' x2='66' y2='85' />
+					<line x1='156' y1='70' x2='134' y2='73' />
+					<line x1='156' y1='77' x2='134' y2='79' />
+					<line x1='156' y1='84' x2='134' y2='85' />
 				</g>
 
-				{/* === MOUTH CENTER LINE === */}
-				<line x1="100" y1="85" x2="100" y2="108" stroke="#333" strokeWidth="1.2" />
-
-				{/* === NOSE TO MOUTH LINE === */}
-				<line x1="100" y1="85" x2="100" y2="92" stroke="#333" strokeWidth="1.2" />
-				<path d="M92 90 Q100 94 108 90" fill="none" stroke="#333" strokeWidth="1.2" />
-
 				{/* === EXPRESSION EFFECTS === */}
-
 				{expression === 'happy' && (
 					<>
-						<ellipse cx="55" cy="74" rx="8" ry="5" fill="#FF8A80" opacity="0.35" />
-						<ellipse cx="145" cy="74" rx="8" ry="5" fill="#FF8A80" opacity="0.35" />
+						<ellipse cx='52' cy='76' rx='10' ry='6' fill='#FF8A80' opacity='0.35' />
+						<ellipse cx='148' cy='76' rx='10' ry='6' fill='#FF8A80' opacity='0.35' />
 					</>
 				)}
 
 				{expression === 'angry' && (
 					<>
-						<line x1="62" y1="44" x2="90" y2="50" stroke="#1A1A1A" strokeWidth="2.5" strokeLinecap="round" />
-						<line x1="138" y1="44" x2="110" y2="50" stroke="#1A1A1A" strokeWidth="2.5" strokeLinecap="round" />
+						<line x1='58' y1='42' x2='88' y2='50' stroke='#1A1A1A' strokeWidth='3.5' strokeLinecap='round' />
+						<line x1='142' y1='42' x2='112' y2='50' stroke='#1A1A1A' strokeWidth='3.5' strokeLinecap='round' />
 					</>
 				)}
 
 				{expression === 'shocked' && (
 					<>
-						<path d="M148 48 Q152 56 148 62 Q144 56 148 48" fill="#64B5F6" />
-						<path d="M52 48 Q56 56 52 62 Q48 56 52 48" fill="#64B5F6" />
-						{/* Bigger eyes from eyeScale */}
+						<path d='M152 46 Q156 56 152 66 Q148 56 152 46' fill='#64B5F6' stroke='#42A5F5' strokeWidth='1.5' />
+						<path d='M48 46 Q52 56 48 66 Q44 56 48 46' fill='#64B5F6' stroke='#42A5F5' strokeWidth='1.5' />
 					</>
 				)}
 
 				{/* === POCKET GLOW === */}
-				<ellipse cx="100" cy="158" rx="34" ry="16" fill="none" stroke="#42A5F5" strokeWidth="2" opacity={pocketGlow} />
+				<ellipse cx='100' cy='160' rx='36' ry='17' fill='none' stroke='#42A5F5' strokeWidth='2.5' opacity={pocketGlow} />
 
-				{/* === BELL SWING (overlays on top) === */}
+				{/* === BELL SWING === */}
 				<g transform={`translate(0, 0) rotate(${bellSwing}, 100, 115)`}>
-					<circle cx="100" cy="115" r="11" fill="url(#doraemon-bell)" stroke="#F9A825" strokeWidth="2" />
-					<circle cx="100" cy="119" r="4.5" fill="#F9A825" stroke="#F57F17" strokeWidth="1" />
-					<line x1="94" y1="115" x2="106" y2="115" stroke="#F57F17" strokeWidth="2" strokeLinecap="round" />
-					<circle cx="96" cy="112" r="2" fill="white" opacity="0.6" />
+					<circle cx='100' cy='115' r='12' fill='url(#doraemon-bell)' stroke='#F9A825' strokeWidth='2.5' />
+					<circle cx='100' cy='120' r='5' fill='#F9A825' stroke='#F57F17' strokeWidth='1.5' />
+					<line x1='93' y1='115' x2='107' y2='115' stroke='#F57F17' strokeWidth='2.5' strokeLinecap='round' />
+					<circle cx='96' cy='111' r='2.5' fill='white' opacity='0.6' />
 				</g>
 			</g>
 		</svg>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { spring, useVideoConfig, interpolate } from 'remotion';
+import { spring, useVideoConfig, interpolate, Easing } from 'remotion';
 import { getCharacterSvg, getCharacterColor, getCharacterDisplayName, normalizeCharacterName, isKnownCharacter, type Expression } from '../characters/registry';
 
 interface CharacterProps {
@@ -128,7 +128,7 @@ export const Character: React.FC<CharacterProps> = ({
 		squashFrame,
 		[12, 15, 20],
 		[1, 0.93, 1],
-		{ extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: (t) => 1 - Math.pow(1 - t, 3) },
+		{ extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.elastic(1) },
 	);
 	const stretchX = 1 / squash;
 

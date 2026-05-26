@@ -47,14 +47,14 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 		{ extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
 	);
 
-	// ── Spring entrance ─────────────────────────────────────────────────
+	// ── Spring entrance (pop-in from meta-review: damping:15, stiffness:300) ──
 	const entrance = spring({
 		frame,
 		fps,
-		config: { ...springs.standard, mass: 0.6 },
+		config: { damping: 15, stiffness: 300, mass: 0.6 },
 	});
-	const slideUp = interpolate(entrance, [0, 1], [30, 0]);
-	const bubbleScale = interpolate(entrance, [0, 1], [0.88, 1]);
+	const slideUp = interpolate(entrance, [0, 1], [20, 0]);
+	const bubbleScale = interpolate(entrance, [0, 1], [0.92, 1]);
 
 	// ── Line-by-line stagger reveal ─────────────────────────────────────
 	const LINE_STAGGER = 6;
@@ -113,13 +113,14 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 										color: speakerColors?.accent || '#FFD54F',
 										transform: `scale(${emphasis})`,
 										display: 'inline-block',
+										WebkitTextStroke: '1.5px rgba(0,0,0,0.4)',
 									}}
 								>
 									{word}
 								</span>
 							);
 						}
-						return <span key={w}>{word}</span>;
+						return <span key={w} style={{ WebkitTextStroke: '1.5px rgba(0,0,0,0.4)' }}>{word}</span>;
 					})}
 				</div>
 			);
@@ -170,7 +171,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 			<div
 				style={{
 					position: 'relative',
-					padding: '16px 32px',
+					padding: '16px 32px 16px 40px',
 					maxWidth: '78%',
 					backgroundColor: 'rgba(0, 0, 0, 0.82)',
 					borderRadius: 18,
@@ -185,9 +186,10 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 						0 0 60px ${speakerColors?.accent || 'transparent'}22,
 						inset 0 1px 0 rgba(255,255,255,0.08)
 					`,
-					border: speakerColors
-						? `2px solid ${speakerColors.accent}44`
-						: '2px solid rgba(255,255,255,0.1)',
+					border: '2px solid rgba(255,255,255,0.1)',
+					borderLeft: speakerColors
+						? `6px solid ${speakerColors.accent}`
+						: '6px solid transparent',
 					transform: `scale(${bubbleScale * textScale})`,
 					backdropFilter: 'blur(6px)',
 					WebkitBackdropFilter: 'blur(6px)',
@@ -221,6 +223,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 							color: speakerColors?.accent || '#FFD54F',
 							fontSize: type.body.fontSize * 0.85,
 							marginLeft: 2,
+							WebkitTextStroke: '1.5px rgba(0,0,0,0.4)',
 						}}
 					>
 						▍

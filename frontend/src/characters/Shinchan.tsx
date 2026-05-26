@@ -44,35 +44,35 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 	// ── Character-specific offsets & expressions ──────────────────────────
 	const eyeOffsetY = expression === 'happy' ? -3 : expression === 'angry' ? 2 : 0;
 
-	// Eyebrow tilt: happy = raised, angry = lowered sharply, shocked = very high
-	const browTilt = expression === 'happy' ? -6 : expression === 'angry' ? 12 : expression === 'shocked' ? -14 : 0;
-	const browTiltRight = expression === 'happy' ? -6 : expression === 'angry' ? 10 : expression === 'shocked' ? -14 : 0;
+	// Eyebrow tilt — thicker anime-style brows
+	const browTilt = expression === 'happy' ? -8 : expression === 'angry' ? 14 : expression === 'shocked' ? -16 : 0;
+	const browTiltRight = expression === 'happy' ? -8 : expression === 'angry' ? 12 : expression === 'shocked' ? -16 : 0;
 
-	// Hair bounce: subtle wiggle from speaking + expression
+	// Hair bounce
 	const hairSway = isSpeaking ? Math.sin(speakingFrame * 0.15) * 2 : 0;
 	const hairSway2 = isSpeaking ? Math.sin(speakingFrame * 0.12 + 1.5) * 1.5 : 0;
 
-	// Blush pulse: brighter when happy
+	// Blush pulse
 	const blushOpacity = expression === 'happy' ? 0.35 + Math.sin(speakingFrame * 0.2) * 0.12 : 0;
 
-	// Sweat drops: falling when shocked, loop every 40 frames
+	// Sweat drops
 	const sweatDropY1 = expression === 'shocked' ? 60 + (speakingFrame % 40) * 0.4 : 60;
 	const sweatDropY2 = expression === 'shocked' ? 52 + ((speakingFrame + 20) % 40) * 0.35 : 52;
 
-	// ── Mouth path — extra wide for Shinchan's iconic big mouth ───────────
+	// ── Mouth path — Shinchan's big expressive mouth ──────────────────────
 	const getMouthPath = () => {
 		if (isSpeaking) {
 			const baseOpen = 130 + mouthOpenAmount;
-			if (expression === 'happy') return `M55 126 Q95 ${baseOpen + 20} 135 126`;
-			if (expression === 'angry') return `M60 122 Q95 ${baseOpen - 8} 130 122`;
-			if (expression === 'shocked') return `M65 114 Q95 ${baseOpen + 10} 125 114`;
-			return `M55 124 Q95 ${baseOpen + 16} 135 124`;
+			if (expression === 'happy') return `M55 126 Q95 ${baseOpen + 22} 135 126`;
+			if (expression === 'angry') return `M60 122 Q95 ${baseOpen - 10} 130 122`;
+			if (expression === 'shocked') return `M65 114 Q95 ${baseOpen + 12} 125 114`;
+			return `M55 124 Q95 ${baseOpen + 18} 135 124`;
 		}
 		switch (expression) {
-			case 'happy': return 'M55 126 Q95 168 135 126';
-			case 'angry': return 'M60 122 Q95 108 130 122';
-			case 'shocked': return 'M65 114 Q95 152 125 114';
-			default: return 'M55 124 Q95 158 135 124';
+			case 'happy': return 'M55 126 Q95 170 135 126';
+			case 'angry': return 'M60 122 Q95 106 130 122';
+			case 'shocked': return 'M65 114 Q95 155 125 114';
+			default: return 'M55 124 Q95 160 135 124';
 		}
 	};
 
@@ -82,6 +82,14 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 			: expression === 'shocked'
 				? '#333'
 				: 'none';
+
+	const STROKE = {
+		thick: '#1A1A1A',
+		thin: '#444',
+		skin: '#A0784C',
+	};
+
+	const SW = 3; // thick stroke width for anime outlines
 
 	return (
 		<svg width='280' height='360' viewBox='0 0 200 280'>
@@ -105,7 +113,7 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 					<stop offset='100%' stopColor='#1A1A1A' />
 				</linearGradient>
 				<filter id='shinchan-shadow'>
-					<feDropShadow dx='0' dy='3' stdDeviation='3' floodColor='#000' floodOpacity='0.15' />
+					<feDropShadow dx='0' dy='4' stdDeviation='4' floodColor='#000' floodOpacity='0.2' />
 				</filter>
 			</defs>
 
@@ -115,108 +123,129 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 			>
 				{/* === LEGS (with bounce) === */}
 				<g transform={`translate(0, ${legBounce})`}>
-					<rect x='68' y='248' width='18' height='22' rx='4' fill='#FFCC80' stroke='#DBA56E' strokeWidth='1.5' />
-					<rect x='114' y='248' width='18' height='22' rx='4' fill='#FFCC80' stroke='#DBA56E' strokeWidth='1.5' />
-					<rect x='67' y='266' width='20' height='8' rx='3' fill='white' stroke='#E0E0E0' strokeWidth='1' />
-					<rect x='113' y='266' width='20' height='8' rx='3' fill='white' stroke='#E0E0E0' strokeWidth='1' />
-					<ellipse cx='77' cy='278' rx='15' ry='7' fill='#5D4037' stroke='#3E2723' strokeWidth='1.5' />
-					<ellipse cx='123' cy='278' rx='15' ry='7' fill='#5D4037' stroke='#3E2723' strokeWidth='1.5' />
-					<ellipse cx='74' cy='275' rx='6' ry='2' fill='#795548' opacity='0.5' />
-					<ellipse cx='120' cy='275' rx='6' ry='2' fill='#795548' opacity='0.5' />
+					<rect x='68' y='248' width='18' height='22' rx='5' fill='#FFCC80' stroke={STROKE.skin} strokeWidth={SW} />
+					<rect x='114' y='248' width='18' height='22' rx='5' fill='#FFCC80' stroke={STROKE.skin} strokeWidth={SW} />
+					{/* Socks */}
+					<rect x='67' y='266' width='20' height='8' rx='3' fill='white' stroke='#CCC' strokeWidth='1.5' />
+					<rect x='113' y='266' width='20' height='8' rx='3' fill='white' stroke='#CCC' strokeWidth='1.5' />
+					{/* Shoes */}
+					<ellipse cx='77' cy='278' rx='16' ry='8' fill='#5D4037' stroke='#3E2723' strokeWidth='2' />
+					<ellipse cx='123' cy='278' rx='16' ry='8' fill='#5D4037' stroke='#3E2723' strokeWidth='2' />
 				</g>
 
-				<rect x='58' y='212' width='84' height='38' rx='6' fill='url(#shinchan-shorts)' stroke='#F9A825' strokeWidth='2' />
-				<rect x='58' y='210' width='84' height='6' rx='3' fill='#F9A825' />
+				{/* === SHORTS === */}
+				<rect x='56' y='212' width='88' height='40' rx='6' fill='url(#shinchan-shorts)' stroke='#F9A825' strokeWidth={SW} />
+				<rect x='56' y='210' width='88' height='7' rx='3.5' fill='#F9A825' />
 
-				<rect x='56' y='135' width='88' height='82' rx='10' fill='url(#shinchan-shirt)' stroke='#B71C1C' strokeWidth='2' />
-				<path d='M82 135 L100 155 L118 135' fill='url(#shinchan-shirt)' stroke='#B71C1C' strokeWidth='1.5' />
-				<path d='M82 135 L95 150' fill='none' stroke='#C62828' strokeWidth='1' opacity='0.5' />
-				<path d='M118 135 L105 150' fill='none' stroke='#C62828' strokeWidth='1' opacity='0.5' />
+				{/* === BODY / SHIRT === */}
+				<rect x='54' y='135' width='92' height='82' rx='12' fill='url(#shinchan-shirt)' stroke='#B71C1C' strokeWidth={SW} />
+
+				{/* Shirt collar */}
+				<path d='M80 135 L100 155 L120 135' fill='url(#shinchan-shirt)' stroke='#B71C1C' strokeWidth='2.5' />
+				<path d='M80 135 L95 150' fill='none' stroke='#C62828' strokeWidth='1.5' opacity='0.5' />
+				<path d='M120 135 L105 150' fill='none' stroke='#C62828' strokeWidth='1.5' opacity='0.5' />
 
 				{/* === ARMS === */}
-				<g transform={`rotate(${leftArmAngle}, 56, 155)`}>
-					<rect x='38' y='152' width='40' height='14' rx='7' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='1.5' />
-					<circle cx='25' cy='155' r='10' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='1.5' />
+				<g transform={`rotate(${leftArmAngle}, 54, 155)`}>
+					<rect x='36' y='152' width='42' height='16' rx='8' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
+					<circle cx='24' cy='156' r='11' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
 				</g>
-				<g transform={`rotate(${rightArmAngle}, 144, 155)`}>
-					<rect x='122' y='152' width='40' height='14' rx='7' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='1.5' />
-					<circle cx='175' cy='155' r='10' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='1.5' />
+				<g transform={`rotate(${rightArmAngle}, 146, 155)`}>
+					<rect x='122' y='152' width='42' height='16' rx='8' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
+					<circle cx='176' cy='156' r='11' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
 				</g>
 
-				{/* === HEAD === */}
-				<ellipse cx='100' cy='78' rx='50' ry='56' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='2.5' />
+				{/* === HEAD — larger oval for anime look === */}
+				<ellipse cx='100' cy='78' rx='54' ry='60' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
 
-				{/* Hair with bounce */}
+				{/* Hair — spikier, more character */}
 				<g transform={`translate(${hairSway}, ${Math.abs(hairSway) * 0.3})`}>
-					<path d='M52 52 Q56 22 76 20 Q85 14 100 16 Q115 14 124 20 Q144 22 148 52' fill='url(#shinchan-hair)' />
-					<path d='M52 52 Q48 58 50 64' fill='none' stroke='#1A1A1A' strokeWidth='4' strokeLinecap='round' />
-					<path d='M148 52 Q152 58 150 64' fill='none' stroke='#1A1A1A' strokeWidth='4' strokeLinecap='round' />
-					<path d='M75 28 Q85 22 100 24 Q115 22 125 28' fill='none' stroke='#444' strokeWidth='2' opacity='0.4' />
+					<path d='M48 54 Q52 18 76 16 Q85 10 100 12 Q115 10 124 16 Q148 18 152 54' fill='url(#shinchan-hair)' stroke={STROKE.thick} strokeWidth='2.5' />
+					{/* Side tufts */}
+					<path d='M48 54 Q42 60 44 68' fill='none' stroke={STROKE.thick} strokeWidth='5' strokeLinecap='round' />
+					<path d='M152 54 Q158 60 156 68' fill='none' stroke={STROKE.thick} strokeWidth='5' strokeLinecap='round' />
+					{/* Hair highlight */}
+					<path d='M72 26 Q85 18 100 20 Q115 18 128 26' fill='none' stroke='#555' strokeWidth='2.5' opacity='0.35' />
 				</g>
-				{/* Extra hair tufts that sway more */}
+				{/* Extra hair tufts */}
 				<g transform={`translate(${hairSway2}, ${Math.abs(hairSway2) * 0.2})`}>
-					<path d='M58 36 Q54 28 60 26' fill='none' stroke='#1A1A1A' strokeWidth='2.5' strokeLinecap='round' />
-					<path d='M140 34 Q146 26 140 24' fill='none' stroke='#1A1A1A' strokeWidth='2.5' strokeLinecap='round' />
+					<path d='M56 34 Q50 24 58 20' fill='none' stroke={STROKE.thick} strokeWidth='3' strokeLinecap='round' />
+					<path d='M144 32 Q150 22 142 18' fill='none' stroke={STROKE.thick} strokeWidth='3' strokeLinecap='round' />
 				</g>
 
-				<ellipse cx='50' cy='76' rx='8' ry='12' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='1.5' />
-				<ellipse cx='150' cy='76' rx='8' ry='12' fill='url(#shinchan-skin)' stroke='#DBA56E' strokeWidth='1.5' />
-				<ellipse cx='50' cy='76' rx='4' ry='6' fill='#F4A460' opacity='0.5' />
-				<ellipse cx='150' cy='76' rx='4' ry='6' fill='#F4A460' opacity='0.5' />
+				{/* === EARS === */}
+				<ellipse cx='46' cy='78' rx='9' ry='14' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
+				<ellipse cx='154' cy='78' rx='9' ry='14' fill='url(#shinchan-skin)' stroke={STROKE.skin} strokeWidth={SW} />
+				<ellipse cx='46' cy='78' rx='4' ry='7' fill='#F4A460' opacity='0.5' />
+				<ellipse cx='154' cy='78' rx='4' ry='7' fill='#F4A460' opacity='0.5' />
 
-				{/* Animated eyebrows */}
-				<g transform={`rotate(${browTilt}, 76, 65)`}>
-					<rect x='60' y='58' width='32' height='10' rx='5' fill='#1A1A1A' />
+				{/* === EYEBROWS — Shinchan's iconic thick brows === */}
+				<g transform={`rotate(${browTilt}, 76, 64)`}>
+					<rect x='58' y='56' width='36' height='12' rx='6' fill={STROKE.thick} />
 				</g>
-				<g transform={`rotate(${browTiltRight}, 124, 65)`}>
-					<rect x='108' y='58' width='32' height='10' rx='5' fill='#1A1A1A' />
+				<g transform={`rotate(${browTiltRight}, 124, 64)`}>
+					<rect x='106' y='56' width='36' height='12' rx='6' fill={STROKE.thick} />
+				</g>
+				{/* Brow outline for extra thickness */}
+				<g transform={`rotate(${browTilt}, 76, 64)`}>
+					<rect x='58' y='56' width='36' height='12' rx='6' fill='none' stroke={STROKE.thick} strokeWidth='1' />
+				</g>
+				<g transform={`rotate(${browTiltRight}, 124, 64)`}>
+					<rect x='106' y='56' width='36' height='12' rx='6' fill='none' stroke={STROKE.thick} strokeWidth='1' />
 				</g>
 
-				<ellipse cx='76' cy={`${80 + eyeOffsetY}`} rx={13} ry={blinkH} fill='white' stroke='#444' strokeWidth='1.5' />
-				<ellipse cx='124' cy={`${80 + eyeOffsetY}`} rx={13} ry={blinkH} fill='white' stroke='#444' strokeWidth='1.5' />
+				{/* === EYES — big round anime eyes === */}
+				<ellipse cx='76' cy={`${82 + eyeOffsetY}`} rx='15' ry={blinkH} fill='white' stroke={STROKE.thin} strokeWidth='2.5' />
+				<ellipse cx='124' cy={`${82 + eyeOffsetY}`} rx='15' ry={blinkH} fill='white' stroke={STROKE.thin} strokeWidth='2.5' />
 
 				{!isBlinking && (
 					<>
-						<circle cx='78' cy={`${82 + eyeOffsetY}`} r='5' fill='#1A1A1A' />
-						<circle cx='126' cy={`${82 + eyeOffsetY}`} r='5' fill='#1A1A1A' />
-						<circle cx='80' cy={`${78 + eyeOffsetY}`} r='2.5' fill='white' />
-						<circle cx='128' cy={`${78 + eyeOffsetY}`} r='2.5' fill='white' />
-						<circle cx='75' cy={`${84 + eyeOffsetY}`} r='1' fill='white' opacity='0.6' />
-						<circle cx='123' cy={`${84 + eyeOffsetY}`} r='1' fill='white' opacity='0.6' />
+						{/* Pupils */}
+						<circle cx='79' cy={`${84 + eyeOffsetY}`} r='6' fill={STROKE.thick} />
+						<circle cx='127' cy={`${84 + eyeOffsetY}`} r='6' fill={STROKE.thick} />
+						{/* Eye shines */}
+						<circle cx='81' cy={`${80 + eyeOffsetY}`} r='3' fill='white' />
+						<circle cx='129' cy={`${80 + eyeOffsetY}`} r='3' fill='white' />
+						<circle cx='76' cy={`${86 + eyeOffsetY}`} r='1.5' fill='white' opacity='0.6' />
+						<circle cx='124' cy={`${86 + eyeOffsetY}`} r='1.5' fill='white' opacity='0.6' />
 					</>
 				)}
 
-				<circle cx='100' cy='95' r='3.5' fill='#E8945E' stroke='#DBA56E' strokeWidth='1' />
+				{/* === NOSE — tiny dot === */}
+				<circle cx='100' cy='97' r='4' fill='#E8945E' stroke={STROKE.skin} strokeWidth='1.5' />
 
-				<path d={getMouthPath()} fill={mouthFill} stroke='#333' strokeWidth='2.5' strokeLinecap='round' />
+				{/* === MOUTH === */}
+				<path d={getMouthPath()} fill={mouthFill} stroke={STROKE.thick} strokeWidth='3' strokeLinecap='round' />
 
 				{showInterior && (
-					<ellipse cx='95' cy={134 + mouthOpenAmount * 0.5} rx='12' ry='5' fill='#FF7979' opacity='0.7' />
+					<ellipse cx='95' cy={134 + mouthOpenAmount * 0.5} rx='14' ry='6' fill='#FF7979' opacity='0.7' />
 				)}
 
-				{/* Animated blush when happy */}
+				{/* === CHEEK BLUSH (when happy) === */}
 				{expression === 'happy' && (
 					<>
-						<ellipse cx='55' cy='98' rx='12' ry='7' fill='#FF8A80' opacity={blushOpacity} />
-						<ellipse cx='145' cy='98' rx='12' ry='7' fill='#FF8A80' opacity={blushOpacity} />
+						<ellipse cx='52' cy='100' rx='14' ry='8' fill='#FF8A80' opacity={blushOpacity} />
+						<ellipse cx='148' cy='100' rx='14' ry='8' fill='#FF8A80' opacity={blushOpacity} />
 					</>
 				)}
 
+				{/* === ANGRY EFFECTS === */}
 				{expression === 'angry' && (
 					<>
-						<path d='M58 50 L54 42 L62 46' fill='none' stroke='#C62828' strokeWidth='2' strokeLinecap='round' />
-						<rect x='58' y='56' width='34' height='10' rx='5' fill='#1A1A1A' transform='rotate(-8, 75, 60)' />
-						<rect x='108' y='56' width='34' height='10' rx='5' fill='#1A1A1A' transform='rotate(8, 125, 60)' />
+						{/* Angry veins / forehead marks */}
+						<path d='M90 46 L94 38 L98 46' fill='none' stroke='#C62828' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round' />
+						<path d='M98 44 L102 36 L106 44' fill='none' stroke='#C62828' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round' />
 					</>
 				)}
 
+				{/* === SHOCKED EFFECTS === */}
 				{expression === 'shocked' && (
 					<>
-						<path d='M145 55 Q148 62 145 68 Q142 62 145 55' fill='#64B5F6' />
-						<path d='M55 55 Q58 62 55 68 Q52 62 55 55' fill='#64B5F6' />
+						<path d='M150 52 Q154 60 150 68 Q146 60 150 52' fill='#64B5F6' stroke='#42A5F5' strokeWidth='1' />
+						<path d='M50 52 Q54 60 50 68 Q46 60 50 52' fill='#64B5F6' stroke='#42A5F5' strokeWidth='1' />
 						{/* Sweat drops */}
-						<ellipse cx='52' cy={sweatDropY1} rx='3' ry='4.5' fill='#64B5F6' opacity='0.7' />
-						<ellipse cx='148' cy={sweatDropY2} rx='2.5' ry='3.5' fill='#64B5F6' opacity='0.5' />
+						<ellipse cx='48' cy={sweatDropY1} rx='3.5' ry='5.5' fill='#64B5F6' opacity='0.8' />
+						<ellipse cx='152' cy={sweatDropY2} rx='3' ry='4.5' fill='#64B5F6' opacity='0.6' />
 					</>
 				)}
 			</g>

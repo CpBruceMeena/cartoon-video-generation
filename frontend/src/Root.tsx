@@ -288,8 +288,8 @@ const DynamicScene: React.FC<{
 	const pushIn = expressiveness * CAMERA_PUSH_INTENSITY;
 	const cameraZoom = 1 + (activeLine ? CAMERA_ZOOM_INTENSITY : 0) + pushIn;
 
-	// ── Impact shake on punchline (Doraemon's shocking realization ~frame 164) ──
-	const shockStart = 164 - scene.startFrame;
+	// ── Impact shake on punchline (meta-review: frames 268-275) ──
+	const shockStart = 268 - scene.startFrame;
 	const shakeActive = frame >= shockStart && frame < shockStart + 8;
 	const shakeX = shakeActive
 		? Math.sin(frame * 50) * CAMERA_SHAKE_INTENSITY
@@ -303,8 +303,19 @@ const DynamicScene: React.FC<{
 	const finalPushProgress = Math.max(0, Math.min(1, (frame - finalPushStart) / 40));
 	const finalPushScale = 1 + finalPushProgress * 0.02;
 
+	// ── Windup + punch for punchline climax (Shinchan's last line ~frames 264-270) ──
+	const windupStart = 264 - scene.startFrame;
+	const windupActive = frame >= windupStart;
+	const windupPull = windupActive
+		? interpolate(frame, [windupStart, windupStart + 6], [0, -10], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+		: 0;
+	const punchSpring = windupActive
+		? spring({ frame: frame - windupStart - 6, fps, config: { damping: 8, stiffness: 300, mass: 0.6 } })
+		: 0;
+	const windupOffset = windupPull + punchSpring * 15;
+
 	const cameraTransform = `
-		translateX(${((targetPan * cameraPanSpring) + shakeX).toFixed(1)}px)
+		translateX(${((targetPan * cameraPanSpring) + shakeX + windupOffset).toFixed(1)}px)
 		translateY(${shakeY.toFixed(1)}px)
 		scale(${(cameraZoom * finalPushScale).toFixed(4)})
 	`;

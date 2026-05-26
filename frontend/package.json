@@ -7,6 +7,7 @@
     "start": "remotion studio src/index.ts",
     "build": "remotion render src/index.ts DynamicVideo out/output.mp4 --overwrite",
     "build:final": "cd ../backend && ./run.sh pipeline",
+    "render:optimized": "npx remotion render src/index.ts DynamicVideo out/output.mp4 --overwrite --codec=h264 --crf=18 --fps=24 --image-format=jpeg --scale=1 --concurrency=8",
     "clean": "cd ../backend && ./run.sh clean"
   },
   "keywords": [
