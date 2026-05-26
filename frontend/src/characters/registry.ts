@@ -2,15 +2,6 @@ import type React from 'react';
 
 import { ShinchanSVG } from './Shinchan';
 import { DoraemonSVG } from './Doraemon';
-import { NobitaSVG } from './Nobita';
-import { MisaeSVG } from './Misae';
-import { ShiroSVG } from './Shiro';
-import { ChibiFoxSVG } from './ChibiFox';
-import { DogSVG } from './Dog';
-import { RayneSVG } from './Rayne';
-import { SchoolgirlSVG } from './Schoolgirl';
-import { ScientistSVG } from './Scientist';
-import { VillainSVG } from './Villain';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -53,31 +44,12 @@ export interface CharacterEntry {
 const SVG_MAP: Record<string, CharacterSvgComponent> = {
 	shinchan: ShinchanSVG as CharacterSvgComponent,
 	doraemon: DoraemonSVG as CharacterSvgComponent,
-	nobita: NobitaSVG as CharacterSvgComponent,
-	misae: MisaeSVG as CharacterSvgComponent,
-	shiro: ShiroSVG,
-	chibifox: ChibiFoxSVG,
-	chibi: ChibiFoxSVG,
-	dog: DogSVG,
-	rayne: RayneSVG,
-	schoolgirl: SchoolgirlSVG,
-	scientist: ScientistSVG,
-	villain: VillainSVG,
 };
 
 // Re-export individual SVGs for direct imports if needed
 export {
 	ShinchanSVG,
 	DoraemonSVG,
-	NobitaSVG,
-	MisaeSVG,
-	ShiroSVG,
-	ChibiFoxSVG,
-	DogSVG,
-	RayneSVG,
-	SchoolgirlSVG,
-	ScientistSVG,
-	VillainSVG,
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -194,16 +166,6 @@ export const COLORS = {
 		Belly: '#ffffff',
 		Collar: '#E53935',
 		Bell: '#FDD835',
-	},
-	Nobita: {
-		Shirt: '#FDD835',
-		Shorts: '#3949AB',
-		Skin: '#FFCC80',
-	},
-	Misae: {
-		Shirt: '#F48FB1',
-		Skirt: '#66BB6A',
-		Skin: '#FFCC80',
 	},
 	Kasukabe: {
 		Sky: '#87CEEB',

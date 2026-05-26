@@ -1,34 +1,53 @@
 import React from 'react';
+import {
+	useMouthOpen,
+	useEyeBlink,
+	useArmAnimation,
+	useBodyMovement,
+	type CharacterSVGProps,
+} from './useCharacterAnimation';
+import { CHARACTER_ANIMATION_CONFIGS } from './animationConfig';
 
-interface Props {
-	expression?: 'normal' | 'happy' | 'angry' | 'shocked';
-	isSpeaking?: boolean;
-	speakingFrame?: number;
-}
+const cfg = CHARACTER_ANIMATION_CONFIGS.schoolgirl!;
 
-export const SchoolgirlSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
-	const mouthOpen = isSpeaking ? Math.abs(Math.sin(speakingFrame * 0.28 * Math.PI * 2)) : 0;
-	const mouthOpenAmount = mouthOpen * 8;
+export const SchoolgirlSVG: React.FC<CharacterSVGProps> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
+	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
+		isSpeaking,
+		speakingFrame,
+		cfg.mouth,
+	);
 
-	const blinkCycle = speakingFrame % 95;
-	const isBlinking = blinkCycle > 90 && blinkCycle < 94;
-	const blinkH = isBlinking ? 1.5 : expression === 'shocked' ? 12 : expression === 'happy' ? 8 : 9;
+	const { isBlinking, blinkH } = useEyeBlink(speakingFrame, expression, cfg.eyeBlink);
+
+	const { leftArmAngle, rightArmAngle } = useArmAnimation(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.arm,
+	);
+
+	const { bodyBounce } = useBodyMovement(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.bodyMovement,
+	);
 
 	const getMouthPath = () => {
 		if (isSpeaking) {
-			const baseY = 132 + mouthOpenAmount;
+			const baseY = 130 + mouthOpenAmount;
 			switch (expression) {
-				case 'happy': return `M78 130 Q100 ${baseY + 14} 122 130`;
-				case 'angry': return `M78 125 Q100 ${baseY - 6} 122 125`;
-				case 'shocked': return `M86 118 Q100 ${baseY + 4} 114 118`;
-				default: return `M80 128 Q100 ${baseY + 10} 120 128`;
+				case 'happy': return `M74 128 Q100 ${baseY + 16} 126 128`;
+				case 'angry': return `M74 122 Q100 ${baseY - 6} 126 122`;
+				case 'shocked': return `M84 116 Q100 ${baseY + 6} 116 116`;
+				default: return `M76 126 Q100 ${baseY + 12} 124 126`;
 			}
 		}
 		switch (expression) {
-			case 'happy': return 'M78 130 Q100 152 122 130';
-			case 'angry': return 'M78 125 Q100 114 122 125';
-			case 'shocked': return 'M86 118 Q100 138 114 118';
-			default: return 'M80 128 Q100 142 120 128';
+			case 'happy': return 'M74 128 Q100 154 126 128';
+			case 'angry': return 'M74 122 Q100 112 126 122';
+			case 'shocked': return 'M84 116 Q100 142 116 116';
+			default: return 'M76 126 Q100 146 124 126';
 		}
 	};
 
@@ -55,7 +74,7 @@ export const SchoolgirlSVG: React.FC<Props> = ({ expression = 'normal', isSpeaki
 				</filter>
 			</defs>
 
-			<g filter="url(#sg-shadow)">
+			<g filter="url(#sg-shadow)" transform={`translate(0, ${bodyBounce})`}>
 				{/* === LEGS === */}
 				<rect x="68" y="225" width="15" height="30" rx="4" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 				<rect x="117" y="225" width="15" height="30" rx="4" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
@@ -76,18 +95,21 @@ export const SchoolgirlSVG: React.FC<Props> = ({ expression = 'normal', isSpeaki
 
 				{/* === BODY - Sailor shirt === */}
 				<rect x="58" y="118" width="84" height="68" rx="8" fill="white" stroke="#E0E0E0" strokeWidth="2" />
-				{/* Sailor collar */}
 				<path d="M58 118 L100 152 L142 118" fill="#1565C0" stroke="#0D47A1" strokeWidth="1.5" />
 				<path d="M62 118 L100 150 L138 118" fill="white" />
-				{/* Ribbon/tie */}
 				<path d="M96 148 L100 170 L104 148" fill="#E53935" stroke="#B71C1C" strokeWidth="1" />
 				<circle cx="100" cy="148" r="4.5" fill="#E53935" stroke="#B71C1C" strokeWidth="1" />
 
-				{/* === ARMS === */}
-				<rect x="36" y="128" width="22" height="13" rx="6" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-				<rect x="142" y="128" width="22" height="13" rx="6" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-				<circle cx="36" cy="134" r="8" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
-				<circle cx="164" cy="134" r="8" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				{/* === ANIMATED ARMS === */}
+				<g transform={`rotate(${leftArmAngle}, 58, 130)`}>
+					<rect x="36" y="128" width="22" height="32" rx="7" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
+					<circle cx="36" cy="156" r="9" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				</g>
+
+				<g transform={`rotate(${rightArmAngle}, 142, 130)`}>
+					<rect x="142" y="128" width="22" height="32" rx="7" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
+					<circle cx="164" cy="156" r="9" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				</g>
 
 				{/* === HEAD === */}
 				<ellipse cx="100" cy="75" rx="44" ry="50" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="2" />
@@ -96,11 +118,10 @@ export const SchoolgirlSVG: React.FC<Props> = ({ expression = 'normal', isSpeaki
 				<ellipse cx="56" cy="74" rx="6" ry="10" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 				<ellipse cx="144" cy="74" rx="6" ry="10" fill="url(#sg-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 
-				{/* === HAIR - long black === */}
+				{/* === HAIR === */}
 				<path d="M56 52 Q58 18 78 16 Q88 10 100 12 Q112 10 122 16 Q142 18 144 52" fill="url(#sg-hair)" />
 				<path d="M56 52 Q50 68 46 90 Q44 108 48 125" fill="url(#sg-hair)" />
 				<path d="M144 52 Q150 68 154 90 Q156 108 152 125" fill="url(#sg-hair)" />
-				{/* Hair highlights */}
 				<path d="M52 60 Q50 80 48 100" fill="none" stroke="#444" strokeWidth="1.5" opacity="0.3" />
 				<path d="M148 60 Q150 80 152 100" fill="none" stroke="#444" strokeWidth="1.5" opacity="0.3" />
 
@@ -131,6 +152,10 @@ export const SchoolgirlSVG: React.FC<Props> = ({ expression = 'normal', isSpeaki
 
 				{/* === MOUTH === */}
 				<path d={getMouthPath()} fill={mouthFill} stroke="#333" strokeWidth="2" strokeLinecap="round" />
+
+				{isSpeaking && mouthOpen > 0.4 && (
+					<ellipse cx="100" cy={132 + mouthOpenAmount * 0.4} rx="14" ry="4" fill="#FF7979" opacity="0.6" />
+				)}
 
 				{/* === CHEEK BLUSH === */}
 				{expression === 'happy' && (

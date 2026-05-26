@@ -1,35 +1,56 @@
 import React from 'react';
+import {
+	useMouthOpen,
+	useEyeBlink,
+	useArmAnimation,
+	useBodyMovement,
+	useLegBounce,
+	type CharacterSVGProps,
+} from './useCharacterAnimation';
+import { CHARACTER_ANIMATION_CONFIGS } from './animationConfig';
 
-interface Props {
-	expression?: 'normal' | 'happy' | 'angry' | 'shocked';
-	isSpeaking?: boolean;
-	speakingFrame?: number;
-}
+const cfg = CHARACTER_ANIMATION_CONFIGS.nobita!;
 
-export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
-	const mouthOpen = isSpeaking ? Math.abs(Math.sin(speakingFrame * 0.25 * Math.PI * 2)) : 0;
-	const mouthOpenAmount = mouthOpen * 8;
+export const NobitaSVG: React.FC<CharacterSVGProps> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
+	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
+		isSpeaking,
+		speakingFrame,
+		cfg.mouth,
+	);
 
-	// --- Eye blinking ---
-	const blinkCycle = speakingFrame % 110;
-	const isBlinking = blinkCycle > 104 && blinkCycle < 108;
-	const blinkH = isBlinking ? 1.5 : expression === 'shocked' ? 12 : 8;
+	const { isBlinking, blinkH } = useEyeBlink(speakingFrame, expression, cfg.eyeBlink);
+
+	const { leftArmAngle, rightArmAngle } = useArmAnimation(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.arm,
+	);
+
+	const legBounce = useLegBounce(isSpeaking, speakingFrame, cfg.legBounce);
+
+	const { bodyWobble } = useBodyMovement(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.bodyMovement,
+	);
 
 	const getMouthPath = () => {
 		if (isSpeaking) {
-			const baseY = 132 + mouthOpenAmount;
+			const baseY = 130 + mouthOpenAmount;
 			switch (expression) {
-				case 'happy': return `M78 130 Q100 ${baseY + 12} 122 130`;
-				case 'angry': return `M78 125 Q100 ${baseY - 8} 122 125`;
-				case 'shocked': return `M86 118 Q100 ${baseY + 4} 114 118`;
-				default: return `M78 128 Q100 ${baseY + 8} 122 128`;
+				case 'happy': return `M72 128 Q100 ${baseY + 14} 128 128`;
+				case 'angry': return `M72 122 Q100 ${baseY - 8} 128 122`;
+				case 'shocked': return `M82 116 Q100 ${baseY + 6} 118 116`;
+				default: return `M72 126 Q100 ${baseY + 10} 128 126`;
 			}
 		}
 		switch (expression) {
-			case 'happy': return 'M78 130 Q100 150 122 130';
-			case 'angry': return 'M78 125 Q100 114 122 125';
-			case 'shocked': return 'M86 118 Q100 138 114 118';
-			default: return 'M78 128 Q100 140 122 128';
+			case 'happy': return 'M72 128 Q100 152 128 128';
+			case 'angry': return 'M72 122 Q100 110 128 122';
+			case 'shocked': return 'M82 116 Q100 142 118 116';
+			default: return 'M72 126 Q100 146 128 126';
 		}
 	};
 
@@ -56,18 +77,20 @@ export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking =
 				</filter>
 			</defs>
 
-			<g filter="url(#nobita-shadow)">
-				{/* === LEGS - SKINNY === */}
-				<rect x="72" y="225" width="16" height="28" rx="4" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
-				<rect x="112" y="225" width="16" height="28" rx="4" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+			<g filter="url(#nobita-shadow)" transform={`translate(${bodyWobble}, 0)`}>
+				{/* === LEGS - SKINNY WITH BOUNCE === */}
+				<g transform={`translate(0, ${legBounce})`}>
+					<rect x="72" y="225" width="16" height="28" rx="4" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+					<rect x="112" y="225" width="16" height="28" rx="4" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 
-				{/* Socks */}
-				<rect x="71" y="248" width="18" height="8" rx="3" fill="white" stroke="#E0E0E0" strokeWidth="1" />
-				<rect x="111" y="248" width="18" height="8" rx="3" fill="white" stroke="#E0E0E0" strokeWidth="1" />
+					{/* Socks */}
+					<rect x="71" y="248" width="18" height="8" rx="3" fill="white" stroke="#E0E0E0" strokeWidth="1" />
+					<rect x="111" y="248" width="18" height="8" rx="3" fill="white" stroke="#E0E0E0" strokeWidth="1" />
 
-				{/* Shoes */}
-				<ellipse cx="80" cy="258" rx="14" ry="6" fill="#455A64" stroke="#263238" strokeWidth="1.5" />
-				<ellipse cx="120" cy="258" rx="14" ry="6" fill="#455A64" stroke="#263238" strokeWidth="1.5" />
+					{/* Shoes */}
+					<ellipse cx="80" cy="258" rx="14" ry="6" fill="#455A64" stroke="#263238" strokeWidth="1.5" />
+					<ellipse cx="120" cy="258" rx="14" ry="6" fill="#455A64" stroke="#263238" strokeWidth="1.5" />
+				</g>
 
 				{/* === SHORTS === */}
 				<rect x="64" y="192" width="72" height="34" rx="5" fill="url(#nobita-shorts)" stroke="#283593" strokeWidth="2" />
@@ -78,11 +101,16 @@ export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking =
 				{/* Collar */}
 				<path d="M80 125 L100 142 L120 125" fill="url(#nobita-shirt)" stroke="#F9A825" strokeWidth="1.5" />
 
-				{/* === THIN ARMS === */}
-				<rect x="40" y="136" width="22" height="12" rx="6" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
-				<rect x="138" y="136" width="22" height="12" rx="6" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
-				<circle cx="40" cy="142" r="8" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
-				<circle cx="160" cy="142" r="8" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				{/* === ANIMATED ARMS === */}
+				<g transform={`rotate(${leftArmAngle}, 62, 140)`}>
+					<rect x="38" y="130" width="24" height="38" rx="8" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+					<circle cx="38" cy="164" r="9" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				</g>
+
+				<g transform={`rotate(${rightArmAngle}, 138, 140)`}>
+					<rect x="138" y="130" width="24" height="38" rx="8" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+					<circle cx="162" cy="164" r="9" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				</g>
 
 				{/* === HEAD === */}
 				<ellipse cx="100" cy="80" rx="46" ry="50" fill="url(#nobita-skin)" stroke="#DBA56E" strokeWidth="2" />
@@ -95,17 +123,14 @@ export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking =
 				<path d="M55 52 Q62 22 80 22 Q88 14 100 16 Q112 14 120 22 Q138 22 145 52" fill="#1A1A1A" />
 				<path d="M55 52 Q52 58 53 64" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
 				<path d="M145 52 Q148 58 147 64" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
-				{/* Hair tufts */}
 				<path d="M78 22 Q84 14 90 18" fill="#1A1A1A" />
 				<path d="M110 18 Q116 14 122 22" fill="#1A1A1A" />
-				{/* Hair highlight */}
 				<path d="M75 30 Q88 24 100 26" fill="none" stroke="#444" strokeWidth="1.5" opacity="0.3" />
 
 				{/* === GLASSES === */}
 				<circle cx="76" cy="80" r="20" fill="none" stroke="#607D8B" strokeWidth="2.5" />
 				<circle cx="124" cy="80" r="20" fill="none" stroke="#607D8B" strokeWidth="2.5" />
 				<line x1="96" y1="78" x2="104" y2="78" stroke="#607D8B" strokeWidth="2.5" />
-				{/* Glass shine */}
 				<path d="M66 72 Q70 68 74 70" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
 				<path d="M114 72 Q118 68 122 70" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
 
@@ -126,7 +151,6 @@ export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking =
 				<path d="M60 56 Q76 50 90 58" fill="none" stroke="#1A1A1A" strokeWidth="2.5" strokeLinecap="round" />
 				<path d="M110 58 Q124 50 140 56" fill="none" stroke="#1A1A1A" strokeWidth="2.5" strokeLinecap="round" />
 
-				{/* Angry brows */}
 				{expression === 'angry' && (
 					<>
 						<path d="M58 52 Q76 48 90 58" fill="none" stroke="#1A1A1A" strokeWidth="3" strokeLinecap="round" />
@@ -137,8 +161,12 @@ export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking =
 				{/* === NOSE === */}
 				<ellipse cx="100" cy="95" rx="3" ry="2.5" fill="#E8945E" />
 
-				{/* === MOUTH === */}
+				{/* === MOUTH (wider) === */}
 				<path d={getMouthPath()} fill={mouthFill} stroke="#333" strokeWidth="2" strokeLinecap="round" />
+
+				{isSpeaking && mouthOpen > 0.4 && (
+					<ellipse cx="100" cy={130 + mouthOpenAmount * 0.4} rx="14" ry="4" fill="#FF7979" opacity="0.6" />
+				)}
 
 				{/* === EXPRESSION DETAILS === */}
 				{expression === 'happy' && (
@@ -149,15 +177,11 @@ export const NobitaSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking =
 				)}
 
 				{expression === 'shocked' && (
-					<>
-						<path d="M144 52 Q148 60 144 66 Q140 60 144 52" fill="#64B5F6" />
-					</>
+					<path d="M144 52 Q148 60 144 66 Q140 60 144 52" fill="#64B5F6" />
 				)}
 
 				{expression === 'angry' && (
-					<>
-						<path d="M52 48 L48 42 L56 45" fill="none" stroke="#C62828" strokeWidth="2" strokeLinecap="round" />
-					</>
+					<path d="M52 48 L48 42 L56 45" fill="none" stroke="#C62828" strokeWidth="2" strokeLinecap="round" />
 				)}
 			</g>
 		</svg>

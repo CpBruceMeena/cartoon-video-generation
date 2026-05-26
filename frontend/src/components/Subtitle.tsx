@@ -36,6 +36,9 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 
 	const speakerColors = speaker ? getSubtitleColors(normalizeCharacterName(speaker)) : undefined;
 
+	// Pulse animation on the speaker badge when the character is speaking
+	const badgePulse = 1 + Math.sin(frame * 0.15) * 0.03;
+
 	return (
 		<div
 			style={{
@@ -50,43 +53,49 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression })
 				zIndex: 100,
 			}}
 		>
-			{/* Speaker name badge */}
+			{/* Speaker name badge with accent color and pulse */}
 			{speaker && (
 				<div
 					style={{
-						padding: '4px 18px',
-						marginBottom: 8,
+						padding: '6px 22px',
+						marginBottom: 10,
 						backgroundColor: speakerColors?.bg || 'rgba(0,0,0,0.7)',
-						borderRadius: '20px 20px 4px 4px',
-						fontSize: 22,
+						borderRadius: '24px 24px 6px 6px',
+						fontSize: 24,
 						fontWeight: 'bold',
 						fontFamily: 'Arial, Helvetica, sans-serif',
 						color: speakerColors?.text || '#fff',
 						textAlign: 'center',
-						letterSpacing: 0.5,
+						letterSpacing: 1,
+						boxShadow: `0 2px 12px ${speakerColors?.accent || 'transparent'}66`,
+						transform: `scale(${badgePulse})`,
+						transition: 'transform 0.1s ease',
 					}}
 				>
 					{speaker}
 				</div>
 			)}
 
-			{/* Speech bubble */}
+			{/* Speech bubble with enhanced styling */}
 			<div
 				style={{
-					padding: '14px 32px',
-					maxWidth: '80%',
-					backgroundColor: 'rgba(0, 0, 0, 0.75)',
-					borderRadius: 16,
-					fontSize: 42,
+					padding: '18px 36px',
+					maxWidth: '78%',
+					backgroundColor: 'rgba(0, 0, 0, 0.78)',
+					borderRadius: 20,
+					fontSize: 44,
 					fontFamily: 'Arial, Helvetica, sans-serif',
 					fontWeight: 'bold',
 					color: '#fff',
 					textAlign: 'center',
 					lineHeight: 1.4,
-					boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-					border: speakerColors ? `2px solid ${speakerColors.accent}44` : '2px solid rgba(255,255,255,0.1)',
+					boxShadow: `0 6px 30px rgba(0,0,0,0.5), 0 0 60px ${speakerColors?.accent || 'transparent'}22`,
+					border: speakerColors ? `2px solid ${speakerColors.accent}55` : '2px solid rgba(255,255,255,0.12)',
 					transform: `scale(${textScale})`,
-					backdropFilter: 'blur(2px)',
+					transition: 'transform 0.15s ease',
+					backdropFilter: 'blur(4px)',
+					WebkitBackdropFilter: 'blur(4px)',
+					textShadow: '0 2px 8px rgba(0,0,0,0.3)',
 				}}
 			>
 				{text}

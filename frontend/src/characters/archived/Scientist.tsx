@@ -1,34 +1,53 @@
 import React from 'react';
+import {
+	useMouthOpen,
+	useEyeBlink,
+	useArmAnimation,
+	useBodyMovement,
+	type CharacterSVGProps,
+} from './useCharacterAnimation';
+import { CHARACTER_ANIMATION_CONFIGS } from './animationConfig';
 
-interface Props {
-	expression?: 'normal' | 'happy' | 'angry' | 'shocked';
-	isSpeaking?: boolean;
-	speakingFrame?: number;
-}
+const cfg = CHARACTER_ANIMATION_CONFIGS.scientist!;
 
-export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
-	const mouthOpen = isSpeaking ? Math.abs(Math.sin(speakingFrame * 0.32 * Math.PI * 2)) : 0;
-	const mouthOpenAmount = mouthOpen * 8;
+export const ScientistSVG: React.FC<CharacterSVGProps> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
+	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
+		isSpeaking,
+		speakingFrame,
+		cfg.mouth,
+	);
 
-	const blinkCycle = speakingFrame % 100;
-	const isBlinking = blinkCycle > 94 && blinkCycle < 98;
-	const blinkH = isBlinking ? 1.5 : expression === 'shocked' ? 10 : 7;
+	const { isBlinking, blinkH } = useEyeBlink(speakingFrame, expression, cfg.eyeBlink);
+
+	const { leftArmAngle, rightArmAngle } = useArmAnimation(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.arm,
+	);
+
+	const { bodyBounce, bodyWobble } = useBodyMovement(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.bodyMovement,
+	);
 
 	const getMouthPath = () => {
 		if (isSpeaking) {
-			const baseY = 130 + mouthOpenAmount;
+			const baseY = 128 + mouthOpenAmount;
 			switch (expression) {
-				case 'happy': return `M74 128 Q95 ${baseY + 12} 116 128`;
-				case 'angry': return `M74 122 Q95 ${baseY - 8} 116 122`;
-				case 'shocked': return `M82 118 Q95 ${baseY + 2} 108 118`;
-				default: return `M76 126 Q95 ${baseY + 8} 114 126`;
+				case 'happy': return `M72 126 Q95 ${baseY + 14} 118 126`;
+				case 'angry': return `M72 120 Q95 ${baseY - 6} 118 120`;
+				case 'shocked': return `M80 116 Q95 ${baseY + 4} 110 116`;
+				default: return `M74 124 Q95 ${baseY + 10} 116 124`;
 			}
 		}
 		switch (expression) {
-			case 'happy': return 'M74 128 Q95 150 116 128';
-			case 'angry': return 'M74 122 Q95 112 116 122';
-			case 'shocked': return 'M82 118 Q95 136 108 118';
-			default: return 'M76 126 Q95 142 114 126';
+			case 'happy': return 'M72 126 Q95 150 118 126';
+			case 'angry': return 'M72 120 Q95 110 118 120';
+			case 'shocked': return 'M80 116 Q95 140 110 116';
+			default: return 'M74 124 Q95 142 116 124';
 		}
 	};
 
@@ -55,7 +74,7 @@ export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeakin
 				</filter>
 			</defs>
 
-			<g filter="url(#sci-shadow)">
+			<g filter="url(#sci-shadow)" transform={`translate(${bodyWobble}, ${bodyBounce})`}>
 				{/* === LEGS & SHOES === */}
 				<rect x="62" y="230" width="34" height="40" rx="5" fill="url(#sci-pants)" stroke="#37474F" strokeWidth="1.5" />
 				<rect x="104" y="230" width="34" height="40" rx="5" fill="url(#sci-pants)" stroke="#37474F" strokeWidth="1.5" />
@@ -64,27 +83,26 @@ export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeakin
 
 				{/* === BODY - LAB COAT === */}
 				<rect x="52" y="108" width="96" height="128" rx="8" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="2" />
-				{/* Coat lapels */}
 				<path d="M68 108 L100 140 L132 108" fill="#FAFAFA" stroke="#E0E0E0" strokeWidth="1" />
-				{/* Buttons */}
 				<circle cx="100" cy="155" r="3.5" fill="#E0E0E0" stroke="#BDBDBD" strokeWidth="0.5" />
 				<circle cx="100" cy="172" r="3.5" fill="#E0E0E0" stroke="#BDBDBD" strokeWidth="0.5" />
-				{/* Pocket */}
 				<rect x="130" y="160" width="16" height="14" rx="2" fill="none" stroke="#E0E0E0" strokeWidth="1.5" />
-				{/* Pens in pocket */}
 				<rect x="134" y="152" width="2.5" height="10" rx="1" fill="#1E88E5" />
 				<rect x="138" y="154" width="2.5" height="8" rx="1" fill="#E53935" />
-				{/* Shirt collar hint */}
 				<rect x="72" y="112" width="8" height="6" rx="2" fill="#E3F2FD" />
 				<rect x="120" y="112" width="8" height="6" rx="2" fill="#E3F2FD" />
-				{/* Tie */}
 				<rect x="96" y="118" width="8" height="32" rx="2" fill="#E53935" stroke="#B71C1C" strokeWidth="1" />
 
-				{/* === ARMS === */}
-				<rect x="30" y="116" width="22" height="15" rx="7" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="1.5" />
-				<rect x="148" y="116" width="22" height="15" rx="7" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="1.5" />
-				<circle cx="30" cy="123" r="9" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
-				<circle cx="170" cy="123" r="9" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				{/* === ANIMATED ARMS === */}
+				<g transform={`rotate(${leftArmAngle}, 52, 120)`}>
+					<rect x="30" y="116" width="22" height="36" rx="7" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="1.5" />
+					<circle cx="30" cy="148" r="10" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				</g>
+
+				<g transform={`rotate(${rightArmAngle}, 148, 120)`}>
+					<rect x="148" y="116" width="22" height="36" rx="7" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="1.5" />
+					<circle cx="170" cy="148" r="10" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				</g>
 
 				{/* === HEAD === */}
 				<ellipse cx="100" cy="68" rx="46" ry="52" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="2" />
@@ -93,14 +111,12 @@ export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeakin
 				<ellipse cx="54" cy="70" rx="7" ry="11" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 				<ellipse cx="146" cy="70" rx="7" ry="11" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 
-				{/* === HAIR - messy grey/white === */}
+				{/* === HAIR === */}
 				<path d="M52 50 Q55 18 74 15 Q85 8 100 10 Q115 8 126 15 Q145 18 148 50" fill="#BDBDBD" />
 				<path d="M52 50 Q48 60 46 75" fill="#BDBDBD" />
 				<path d="M148 50 Q152 60 154 75" fill="#BDBDBD" />
-				{/* Hair tufts (mad scientist) */}
 				<path d="M72 15 Q66 4 76 8" fill="#BDBDBD" />
 				<path d="M128 15 Q134 4 124 8" fill="#BDBDBD" />
-				{/* Hair highlight */}
 				<path d="M78 26 Q90 20 110 22" fill="none" stroke="#D6D6D6" strokeWidth="2" opacity="0.4" />
 
 				{/* === GLASSES === */}
@@ -110,7 +126,7 @@ export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeakin
 				<path d="M66 64 Q70 60 74 62" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
 				<path d="M114 64 Q118 60 122 62" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
 
-				{/* === EYES (behind glasses) === */}
+				{/* === EYES === */}
 				<ellipse cx="76" cy="70" rx={6} ry={blinkH} fill="white" stroke="#444" strokeWidth="1" />
 				<ellipse cx="124" cy="70" rx={6} ry={blinkH} fill="white" stroke="#444" strokeWidth="1" />
 
@@ -127,7 +143,6 @@ export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeakin
 				<path d="M58 48 Q76 40 94 48" fill="none" stroke="#757575" strokeWidth="3" strokeLinecap="round" />
 				<path d="M106 48 Q124 40 142 48" fill="none" stroke="#757575" strokeWidth="3" strokeLinecap="round" />
 
-				{/* Angry brows */}
 				{expression === 'angry' && (
 					<>
 						<path d="M56 44 Q76 38 94 48" fill="none" stroke="#757575" strokeWidth="3.5" strokeLinecap="round" />

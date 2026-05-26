@@ -1,40 +1,62 @@
 import React from 'react';
+import {
+	useMouthOpen,
+	useEyeBlink,
+	useArmAnimation,
+	useBodyMovement,
+	useCapeSway,
+	type CharacterSVGProps,
+} from './useCharacterAnimation';
+import { CHARACTER_ANIMATION_CONFIGS } from './animationConfig';
 
-interface Props {
-	expression?: 'normal' | 'happy' | 'angry' | 'shocked';
-	isSpeaking?: boolean;
-	speakingFrame?: number;
-}
+const cfg = CHARACTER_ANIMATION_CONFIGS.rayne!;
 
-export const RayneSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
-	const mouthOpen = isSpeaking ? Math.abs(Math.sin(speakingFrame * 0.25 * Math.PI * 2)) : 0;
-	const mouthOpenAmount = mouthOpen * 8;
+export const RayneSVG: React.FC<CharacterSVGProps> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
+	const { mouthOpen, mouthOpenAmount, showInterior } = useMouthOpen(
+		isSpeaking,
+		speakingFrame,
+		cfg.mouth,
+	);
 
-	const blinkCycle = speakingFrame % 90;
-	const isBlinking = blinkCycle > 84 && blinkCycle < 88;
-	const blinkH = isBlinking ? 1.5 : expression === 'shocked' ? 11 : expression === 'happy' ? 7 : 8;
+	const { isBlinking, blinkH } = useEyeBlink(speakingFrame, expression, cfg.eyeBlink);
+
+	const { leftArmAngle, rightArmAngle } = useArmAnimation(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.arm,
+	);
+
+	const capeSway = useCapeSway(isSpeaking, speakingFrame, cfg.capeSway!);
+
+	const { bodyBounce } = useBodyMovement(
+		isSpeaking,
+		speakingFrame,
+		expression,
+		cfg.bodyMovement,
+	);
+
+	const eyeOffsetY = 62;
 
 	const getMouthPath = () => {
 		if (isSpeaking) {
 			const baseY = 82 + mouthOpenAmount;
 			switch (expression) {
-				case 'happy': return `M70 80 Q80 ${baseY + 8} 90 80`;
-				case 'angry': return `M70 78 Q80 ${baseY - 6} 90 78`;
-				case 'shocked': return `M74 76 Q80 ${baseY + 2} 86 76`;
-				default: return `M72 80 Q80 ${baseY + 6} 88 80`;
+				case 'happy': return `M68 80 Q80 ${baseY + 10} 92 80`;
+				case 'angry': return `M68 78 Q80 ${baseY - 6} 92 78`;
+				case 'shocked': return `M72 76 Q80 ${baseY + 4} 88 76`;
+				default: return `M70 80 Q80 ${baseY + 8} 90 80`;
 			}
 		}
 		switch (expression) {
-			case 'happy': return 'M70 80 Q80 94 90 80';
-			case 'angry': return 'M70 78 Q80 72 90 78';
-			case 'shocked': return 'M74 76 Q80 90 86 76';
-			default: return 'M72 80 Q80 90 88 80';
+			case 'happy': return 'M68 80 Q80 96 92 80';
+			case 'angry': return 'M68 78 Q80 70 92 78';
+			case 'shocked': return 'M72 76 Q80 92 88 76';
+			default: return 'M70 80 Q80 92 90 80';
 		}
 	};
 
 	const mouthFill = (isSpeaking && mouthOpen > 0.3) ? '#1A1A1A' : 'none';
-
-	const eyeOffsetY = 62;
 
 	return (
 		<svg width="260" height="360" viewBox="0 0 160 240">
@@ -57,43 +79,43 @@ export const RayneSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = 
 				</filter>
 			</defs>
 
-			<g filter="url(#rayne-shadow)">
-				{/* === CAPE === */}
-				<path d="M60 140 L18 200 Q80 206 142 200 L100 140" fill="url(#rayne-cape)" stroke="#4A148C" strokeWidth="2" opacity="0.9" />
-				<path d="M18 200 Q6 216 28 232 Q60 218 80 210" fill="#6A1B9A" opacity="0.6" />
+			<g filter="url(#rayne-shadow)" transform={`translate(0, ${bodyBounce})`}>
+				{/* === CAPE (with sway) === */}
+				<g transform={`rotate(${capeSway}, 80, 140)`}>
+					<path d="M60 140 L18 200 Q80 206 142 200 L100 140" fill="url(#rayne-cape)" stroke="#4A148C" strokeWidth="2" opacity="0.9" />
+					<path d="M18 200 Q6 216 28 232 Q60 218 80 210" fill="#6A1B9A" opacity="0.6" />
+				</g>
 
 				{/* === LEGS === */}
 				<rect x="58" y="162" width="16" height="45" rx="5" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
 				<rect x="86" y="162" width="16" height="45" rx="5" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
-				{/* Boots */}
 				<rect x="56" y="204" width="20" height="18" rx="7" fill="#37474F" stroke="#263238" strokeWidth="2" />
 				<rect x="84" y="204" width="20" height="18" rx="7" fill="#37474F" stroke="#263238" strokeWidth="2" />
 				<rect x="56" y="218" width="20" height="4" rx="2" fill="#263238" />
 				<rect x="84" y="218" width="20" height="4" rx="2" fill="#263238" />
-				{/* Boot gold trim */}
 				<rect x="56" y="202" width="20" height="4" rx="2" fill="#FDD835" />
 				<rect x="84" y="202" width="20" height="4" rx="2" fill="#FDD835" />
 
 				{/* === BODY ARMOR === */}
 				<rect x="54" y="100" width="52" height="64" rx="8" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
-				{/* Chest emblem */}
 				<path d="M72 110 L84 120 L72 130 L60 120 Z" fill="#FDD835" stroke="#F9A825" strokeWidth="1.5" />
-				{/* Armor lines */}
 				<path d="M55 110 L105 110" stroke="#0D47A1" strokeWidth="1" opacity="0.4" />
 				<path d="M55 140 L105 140" stroke="#0D47A1" strokeWidth="1" opacity="0.4" />
-				{/* Belt */}
 				<rect x="54" y="154" width="52" height="8" rx="3" fill="#263238" stroke="#1A1A1A" strokeWidth="1.5" />
 				<rect x="75" y="152" width="10" height="12" rx="2" fill="#FDD835" stroke="#F9A825" strokeWidth="1" />
 
-				{/* === ARMS === */}
-				<rect x="32" y="108" width="20" height="14" rx="7" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
-				<rect x="108" y="108" width="20" height="14" rx="7" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
-				{/* Gloves */}
-				<rect x="30" y="120" width="12" height="18" rx="5" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-				<rect x="118" y="120" width="12" height="18" rx="5" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
-				{/* Glove gold trim */}
-				<rect x="30" y="118" width="12" height="3" rx="1.5" fill="#FDD835" />
-				<rect x="118" y="118" width="12" height="3" rx="1.5" fill="#FDD835" />
+				{/* === ANIMATED ARMS === */}
+				<g transform={`rotate(${leftArmAngle}, 54, 110)`}>
+					<rect x="32" y="108" width="22" height="30" rx="7" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
+					<rect x="30" y="136" width="12" height="12" rx="5" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
+					<rect x="30" y="134" width="12" height="3" rx="1.5" fill="#FDD835" />
+				</g>
+
+				<g transform={`rotate(${rightArmAngle}, 106, 110)`}>
+					<rect x="106" y="108" width="22" height="30" rx="7" fill="url(#rayne-armor)" stroke="#0D47A1" strokeWidth="2" />
+					<rect x="118" y="136" width="12" height="12" rx="5" fill="white" stroke="#E0E0E0" strokeWidth="1.5" />
+					<rect x="118" y="134" width="12" height="3" rx="1.5" fill="#FDD835" />
+				</g>
 
 				{/* === HEAD === */}
 				<ellipse cx="80" cy="62" rx="36" ry="38" fill="url(#rayne-skin)" stroke="#DBA56E" strokeWidth="2" />
@@ -102,15 +124,14 @@ export const RayneSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = 
 				<ellipse cx="44" cy="60" rx="6" ry="10" fill="url(#rayne-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 				<ellipse cx="116" cy="60" rx="6" ry="10" fill="url(#rayne-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 
-				{/* === HAIR - long flowing === */}
+				{/* === HAIR === */}
 				<path d="M46 42 Q44 14 54 10 Q64 6 80 8 Q96 6 106 10 Q116 14 114 42" fill="#1A1A1A" />
 				<path d="M46 42 Q40 56 36 78 Q34 96 38 118" fill="#1A1A1A" />
 				<path d="M114 42 Q120 56 124 78 Q126 96 122 118" fill="#1A1A1A" />
-				{/* Hair highlights */}
 				<path d="M50 50 Q48 70 44 90" fill="none" stroke="#444" strokeWidth="2" opacity="0.3" />
 				<path d="M110 50 Q112 70 116 90" fill="none" stroke="#444" strokeWidth="2" opacity="0.3" />
 
-				{/* === CROWN/HEADBAND === */}
+				{/* === CROWN === */}
 				<path d="M46 42 Q60 34 80 32 Q100 34 114 42" fill="none" stroke="#FDD835" strokeWidth="3" />
 				<circle cx="80" cy="32" r="5" fill="#FDD835" stroke="#F9A825" strokeWidth="1" />
 				<circle cx="80" cy="32" r="3" fill="#E53935" />
@@ -140,10 +161,7 @@ export const RayneSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = 
 
 				{/* === EXPRESSION EFFECTS === */}
 				{expression === 'angry' && (
-					<>
-						{/* Power glow */}
-						<ellipse cx="80" cy="62" rx="44" ry="46" fill="none" stroke="#7B1FA2" strokeWidth="2" opacity="0.4" />
-					</>
+					<ellipse cx="80" cy="62" rx="44" ry="46" fill="none" stroke="#7B1FA2" strokeWidth="2" opacity="0.4" />
 				)}
 
 				{expression === 'happy' && (

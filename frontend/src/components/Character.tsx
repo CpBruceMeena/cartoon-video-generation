@@ -71,16 +71,19 @@ export const Character: React.FC<CharacterProps> = ({
 			break;
 	}
 
-	// Entrance animation: slide up from bottom with bounce
-	const entranceDuration = 14;
+	// Entrance animation: smooth spring-like slide-up with overshoot
+	const entranceDuration = 20;
 	let entranceOffset = 0;
 	if (sceneFrame < entranceDuration) {
 		const t = sceneFrame / entranceDuration;
-		// Ease-out bounce effect
+		// Smooth cubic ease-out with a gentle overshoot
 		const eased = 1 - Math.pow(1 - t, 3);
-		const bounce = Math.sin(t * Math.PI * 3) * (1 - t) * 8;
-		entranceOffset = (1 - eased) * 70 + bounce;
+		const overshoot = Math.sin(t * Math.PI * 2.5) * (1 - t) * 10;
+		entranceOffset = (1 - eased) * 80 + overshoot;
 	}
+
+	// Subtle idle dim when not speaking
+	const idleOpacity = isSpeaking ? 1 : 0.92 + Math.sin(sceneFrame * 0.015) * 0.04;
 
 	const transform = `translateX(-50%) translateY(${translateY + entranceOffset}px) scale(${scale}) rotate(${rotate}deg)`;
 
@@ -94,7 +97,8 @@ export const Character: React.FC<CharacterProps> = ({
 				alignItems: 'center' as const,
 				transform,
 				filter,
-				transition: 'filter 0.2s ease',
+				transition: 'filter 0.2s ease, opacity 0.3s ease',
+				opacity: idleOpacity,
 			}}
 			ref={svgRef}
 		>

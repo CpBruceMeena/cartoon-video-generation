@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, interpolate } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { COLORS } from '../config/constants';
 
 type BackgroundType = 'House' | 'Street' | 'Rooftop' | 'SunsetRooftop';
@@ -91,17 +91,23 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 		case 'House':
 			return (
 				<AbsoluteFill style={{ backgroundColor: COLORS.Kasukabe.House }}>
-					{/* Wall pattern */}
-					<div
-						style={{
-							position: 'absolute',
-							top: 0,
-							left: 0,
-							width: '100%',
-							height: '70%',
-							background: 'linear-gradient(180deg, #FFFAF0 0%, #F5E6CC 100%)',
-						}}
-					/>
+					{/* Wall pattern with subtle light flicker */}
+					{(() => {
+						const lightFlicker = 0.97 + Math.sin(frame * 0.06) * 0.02 + Math.sin(frame * 0.13 + 1) * 0.01;
+						return (
+							<div
+								style={{
+									position: 'absolute',
+									top: 0,
+									left: 0,
+									width: '100%',
+									height: '70%',
+									background: 'linear-gradient(180deg, #FFFAF0 0%, #F5E6CC 100%)',
+									opacity: lightFlicker,
+								}}
+							/>
+						);
+					})()}
 
 					{/* Window */}
 					<div
@@ -119,49 +125,81 @@ export const Background: React.FC<BackgroundProps> = ({ type, frame = 0 }) => {
 						{/* Window cross */}
 						<div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: 3, backgroundColor: '#8B4513' }} />
 						<div style={{ position: 'absolute', top: 0, left: '50%', width: 3, height: '100%', backgroundColor: '#8B4513' }} />
-						{/* Curtains */}
-						<div
-							style={{
-								position: 'absolute',
-								top: 0,
-								left: 0,
-								width: 30,
-								height: '100%',
-								background: 'linear-gradient(180deg, #FF8A65 0%, #FFAB91 100%)',
-								opacity: 0.6,
-							}}
-						/>
-						<div
-							style={{
-								position: 'absolute',
-								top: 0,
-								right: 0,
-								width: 30,
-								height: '100%',
-								background: 'linear-gradient(180deg, #FF8A65 0%, #FFAB91 100%)',
-								opacity: 0.6,
-							}}
-						/>
+					{/* Animated Curtains */}
+						{(() => {
+							const curtainSway = Math.sin(frame * 0.04) * 3;
+							const curtainSway2 = Math.sin(frame * 0.035 + 1.5) * 2;
+							return (
+								<>
+									<div
+										style={{
+											position: 'absolute',
+											top: 0,
+											left: 0,
+											width: 30,
+											height: '100%',
+											background: 'linear-gradient(180deg, #FF8A65 0%, #FFAB91 100%)',
+											opacity: 0.6,
+											transform: `translateX(${curtainSway}px)`,
+											transition: 'none',
+										}}
+									/>
+									<div
+										style={{
+											position: 'absolute',
+											top: 0,
+											right: 0,
+											width: 30,
+											height: '100%',
+											background: 'linear-gradient(180deg, #FF8A65 0%, #FFAB91 100%)',
+											opacity: 0.6,
+											transform: `translateX(${-curtainSway2}px)`,
+											transition: 'none',
+										}}
+									/>
+								</>
+							);
+						})()}
 					</div>
 
-					{/* Clock on wall */}
-					<div
-						style={{
-							position: 'absolute',
-							top: '8%',
-							left: '15%',
-							width: 60,
-							height: 60,
-							borderRadius: '50%',
-							backgroundColor: '#fff',
-							border: '3px solid #333',
-						}}
-					>
-						{/* Clock hands */}
-						<div style={{ position: 'absolute', top: '50%', left: '50%', width: 2, height: 18, backgroundColor: '#333', transformOrigin: '50% 0%', transform: 'translateX(-50%) rotate(0deg)' }} />
-						<div style={{ position: 'absolute', top: '50%', left: '50%', width: 2, height: 12, backgroundColor: '#E53935', transformOrigin: '50% 0%', transform: 'translateX(-50%) rotate(45deg)' }} />
-						<div style={{ position: 'absolute', top: 4, left: '50%', width: 2, height: 4, backgroundColor: '#333', transform: 'translateX(-50%)' }} />
-					</div>
+				{/* Animated Clock on wall */}
+					{(() => {
+						// Second hand: full rotation every 360 frames (15s at 24fps)
+						const secondAngle = (frame % 360) * 1;
+						// Minute hand: 1/60th speed
+						const minuteAngle = (frame % 21600) / 60;
+						return (
+							<div
+								style={{
+									position: 'absolute',
+									top: '8%',
+									left: '15%',
+									width: 60,
+									height: 60,
+									borderRadius: '50%',
+									backgroundColor: '#fff',
+									border: '3px solid #333',
+									boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+								}}
+							>
+								{/* Clock numbers */}
+								<div style={{ position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)', fontSize: 8, fontWeight: 'bold', color: '#333' }}>12</div>
+								<div style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', fontSize: 8, fontWeight: 'bold', color: '#333' }}>6</div>
+								<div style={{ position: 'absolute', top: '50%', right: 4, transform: 'translateY(-50%)', fontSize: 8, fontWeight: 'bold', color: '#333' }}>3</div>
+								<div style={{ position: 'absolute', top: '50%', left: 4, transform: 'translateY(-50%)', fontSize: 8, fontWeight: 'bold', color: '#333' }}>9</div>
+								{/* Minute hand */}
+								<div style={{ position: 'absolute', top: '50%', left: '50%', width: 2, height: 16, backgroundColor: '#333', borderRadius: 1, transformOrigin: '50% 0%', transform: `translateX(-50%) rotate(${minuteAngle}deg)` }} />
+								{/* Second hand */}
+								<div style={{ position: 'absolute', top: '50%', left: '50%', width: 1.5, height: 20, backgroundColor: '#E53935', borderRadius: 1, transformOrigin: '50% 0%', transform: `translateX(-50%) rotate(${secondAngle}deg)` }} />
+								{/* Center pin */}
+								<div style={{ position: 'absolute', top: '50%', left: '50%', width: 5, height: 5, borderRadius: '50%', backgroundColor: '#333', transform: 'translate(-50%, -50%)' }} />
+								{/* Tick marks */}
+								{[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle) => (
+									<div key={angle} style={{ position: 'absolute', top: 4, left: 'calc(50% - 6px)', width: 2, height: 4, backgroundColor: '#333', transformOrigin: '50% 26px', transform: `rotate(${angle}deg)` }} />
+								))}
+							</div>
+						);
+					})()}
 
 					{/* Floor */}
 					<div

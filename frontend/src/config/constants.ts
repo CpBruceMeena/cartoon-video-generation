@@ -12,16 +12,7 @@ export const COLORS = {
 		Collar: '#E53935',
 		Bell: '#FDD835',
 	},
-	Nobita: {
-		Shirt: '#FDD835',
-		Shorts: '#3949AB',
-		Skin: '#FFCC80',
-	},
-	Misae: {
-		Shirt: '#F48FB1',
-		Skirt: '#66BB6A',
-		Skin: '#FFCC80',
-	},
+
 	Kasukabe: {
 		Sky: '#87CEEB',
 		Street: '#BDBDBD',
