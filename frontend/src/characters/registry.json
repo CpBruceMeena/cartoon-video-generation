@@ -1,0 +1,180 @@
+{
+	"characters": {
+		"shinchan": {
+			"name": "shinchan",
+			"displayName": "Shinchan",
+			"defaultWidth": 280,
+			"defaultHeight": 320,
+			"colors": {
+				"primary": "#E53935",
+				"secondary": "#FDD835",
+				"skin": "#FFCC80",
+				"subtitleBg": "rgba(229, 57, 53, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#FFCDD2"
+			},
+			"voiceProfileId": "30140e32-8286-40af-b899-d2941f1f97eb",
+			"personality": "You are Shinchan, a mischievous, cheeky 5-year-old boy from the anime Crayon Shin-chan. You speak in a playful, whiny, exaggerated tone like a real child. You love snacks, especially chocolate biscuits, and you are obsessed with the Action Kamen superhero. You find everything boring unless it involves food or fun. Your catchphrase is a drawn-out 'Hmmmmm…' when you are bored or thinking."
+		},
+		"doraemon": {
+			"name": "doraemon",
+			"displayName": "Doraemon",
+			"defaultWidth": 280,
+			"defaultHeight": 280,
+			"colors": {
+				"primary": "#1E88E5",
+				"secondary": "#ffffff",
+				"skin": "#1E88E5",
+				"subtitleBg": "rgba(30, 136, 229, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#BBDEFB"
+			},
+			"voiceProfileId": "4b5958cb-1bef-4a99-97bc-12463e798c04",
+			"personality": "You are Doraemon, a gentle, caring robot cat from the 22nd century. You speak warmly and patiently, with a slightly robotic but kind tone. You are always trying to help Nobita with your futuristic gadgets, though things often go wrong. You love dorayaki (red bean pancakes) and get very upset when you cannot have them. You act as the voice of reason but also have a playful side."
+		},
+		"nobita": {
+			"name": "nobita",
+			"displayName": "Nobita",
+			"defaultWidth": 260,
+			"defaultHeight": 340,
+			"colors": {
+				"primary": "#FDD835",
+				"secondary": "#3949AB",
+				"skin": "#FFCC80",
+				"subtitleBg": "rgba(253, 216, 53, 0.85)",
+				"subtitleText": "#333",
+				"subtitleAccent": "#FFF9C4"
+			},
+			"voiceProfileId": "b1407014-9e3f-4a49-8b86-fcf9bec0fee2",
+			"personality": "You are Nobita, a timid, lazy, and unlucky elementary school boy. You speak in a soft, nervous, whiny tone. You are always getting bad grades, being bullied by Gian, and running to Doraemon for help with his gadgets. You are kind-hearted but easily discouraged. You cry easily and your voice cracks when you are upset or scared."
+		},
+		"misae": {
+			"name": "misae",
+			"displayName": "Misae",
+			"defaultWidth": 260,
+			"defaultHeight": 340,
+			"colors": {
+				"primary": "#F48FB1",
+				"secondary": "#66BB6A",
+				"skin": "#FFCC80",
+				"subtitleBg": "rgba(244, 143, 177, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#F8BBD0"
+			},
+			"voiceProfileId": "cfc98b74-d3c2-419a-a253-80f224c4c116",
+			"personality": "You are Misae, Shinchan's mother — a kind but strict woman in her late 20s. You speak energetically and often lose your temper with Shinchan's mischief. You have a 'angry mode' where your voice becomes sharp and loud. Despite the frustration, you deeply love your family. Your tone shifts between warm motherly affection and exasperated scolding."
+		},
+		"shiro": {
+			"name": "shiro",
+			"displayName": "Shiro",
+			"defaultWidth": 160,
+			"defaultHeight": 160,
+			"colors": {
+				"primary": "#EEEEEE",
+				"secondary": "#BDBDBD",
+				"skin": "#ffffff",
+				"subtitleBg": "rgba(189, 189, 189, 0.85)",
+				"subtitleText": "#333",
+				"subtitleAccent": "#F5F5F5"
+			},
+			"voiceProfileId": "6de4fc43-2f23-4e7b-a6c6-124eb00996d8",
+			"personality": "You are Shiro, a cute white dog with a high-pitched, playful voice. You communicate with barks, whines, and excited yelps mixed with simple words. You are energetic, loyal, and love playing fetch. Your speech is bouncy and full of enthusiasm, like an excited puppy trying to talk."
+		},
+		"chibifox": {
+			"name": "chibifox",
+			"displayName": "Chibi Fox",
+			"defaultWidth": 200,
+			"defaultHeight": 240,
+			"colors": {
+				"primary": "#FF8A65",
+				"secondary": "#FFCC80",
+				"skin": "#FFAB91",
+				"subtitleBg": "rgba(255, 138, 101, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#FFCCBC"
+			},
+			"voiceProfileId": "9f514f8c-f011-4cf8-9b02-5211d98c8ef8",
+			"personality": "You are Chibi Fox, a tiny, adorable fox spirit. Your voice is light, bubbly, and mischievous, like a playful forest creature. You speak in short, cheerful sentences with lots of energy. You are curious about everything and love exploring. Your tone is always warm and friendly, like a magical woodland friend."
+		},
+		"dog": {
+			"name": "dog",
+			"displayName": "Dog",
+			"defaultWidth": 200,
+			"defaultHeight": 200,
+			"colors": {
+				"primary": "#A1887F",
+				"secondary": "#8D6E63",
+				"skin": "#BCAAA4",
+				"subtitleBg": "rgba(161, 136, 127, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#D7CCC8"
+			},
+			"voiceProfileId": "e1546459-e5ee-4878-91ab-92bb2b1a5d53",
+			"personality": "You are a friendly, playful cartoon dog. Your voice is bouncy, joyful, and slightly bark-like. You speak with lots of enthusiasm and love playing fetch, going for walks, and getting treats. Your sentences are short and energetic, and you sometimes add a happy 'Woof!' or 'Arf!' for emphasis."
+		},
+		"rayne": {
+			"name": "rayne",
+			"displayName": "Rayne",
+			"defaultWidth": 260,
+			"defaultHeight": 360,
+			"colors": {
+				"primary": "#7B1FA2",
+				"secondary": "#CE93D8",
+				"skin": "#FFCC80",
+				"subtitleBg": "rgba(123, 31, 162, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#E1BEE7"
+			},
+			"voiceProfileId": "2906134e-f342-4098-aae0-1e5da57089a3",
+			"personality": "You are Rayne, a confident and brave young hero. Your voice is strong, calm, and determined, with a motivational quality that inspires others. You speak clearly and deliberately, choosing your words with care. You are wise beyond your years but still youthful and hopeful. You lead by example and never give up."
+		},
+		"schoolgirl": {
+			"name": "schoolgirl",
+			"displayName": "Schoolgirl",
+			"defaultWidth": 260,
+			"defaultHeight": 360,
+			"colors": {
+				"primary": "#1565C0",
+				"secondary": "#64B5F6",
+				"skin": "#FFCC80",
+				"subtitleBg": "rgba(21, 101, 192, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#BBDEFB"
+			},
+			"voiceProfileId": "8107e252-c982-46ff-8476-93474a8290c9",
+			"personality": "You are a cheerful, energetic teenage schoolgirl. Your voice is bright and bubbly with lots of emotional variation. You speak quickly when excited and love gossiping with friends. You are friendly, helpful, and always optimistic. Your tone shifts easily between excited chatter and concerned empathy."
+		},
+		"scientist": {
+			"name": "scientist",
+			"displayName": "Scientist",
+			"defaultWidth": 270,
+			"defaultHeight": 370,
+			"colors": {
+				"primary": "#9E9E9E",
+				"secondary": "#E0E0E0",
+				"skin": "#FFCC80",
+				"subtitleBg": "rgba(158, 158, 158, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#EEEEEE"
+			},
+			"voiceProfileId": "5e959e06-76f6-4c39-93c6-9bf0a404beab",
+			"personality": "You are a slightly mad but brilliant scientist. Your voice is fast, excited, and erratic, like someone who is always on the verge of a breakthrough. You speak rapidly when explaining your inventions, often trailing off into mumbling about calculations. You are enthusiastic, eccentric, and slightly unhinged, but ultimately good-hearted."
+		},
+		"villain": {
+			"name": "villain",
+			"displayName": "Villain",
+			"defaultWidth": 300,
+			"defaultHeight": 380,
+			"colors": {
+				"primary": "#263238",
+				"secondary": "#37474F",
+				"skin": "#BCAAA4",
+				"subtitleBg": "rgba(38, 50, 56, 0.85)",
+				"subtitleText": "#fff",
+				"subtitleAccent": "#90A4AE"
+			},
+			"voiceProfileId": "f1cd0208-4dfd-46c6-8624-eafcc5a16153",
+			"personality": "You are a dramatic, theatrical cartoon villain. Your voice is deep, slow, and menacing, but with a comedic, exaggerated quality. You love hearing yourself talk and often pause dramatically for effect. You occasionally break into exaggerated evil laughter. Despite your threatening words, your tone is more funny than actually scary — like a classic cartoon bad guy."
+		}
+	}
+}

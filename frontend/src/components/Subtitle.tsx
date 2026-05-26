@@ -1,60 +1,96 @@
 import React from 'react';
-import { Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
+import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { getSubtitleColors, normalizeCharacterName, type Expression } from '../characters/registry';
 
 interface SubtitleProps {
 	text: string;
 	speaker?: string;
-	audioFile?: string | null;
+	expression?: Expression;
 }
 
-export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, audioFile }) => {
+export const Subtitle: React.FC<SubtitleProps> = ({ text, speaker, expression }) => {
 	const frame = useCurrentFrame();
 	const { durationInFrames } = useVideoConfig();
 
-	const fadeInEnd = Math.min(5, Math.floor(durationInFrames * 0.1));
-	const fadeOutStart = Math.max(durationInFrames - 8, Math.floor(durationInFrames * 0.85));
+	// Subtle fade-in/out
+	const fadeInEnd = Math.min(4, Math.floor(durationInFrames * 0.08));
+	const fadeOutStart = Math.max(durationInFrames - 6, Math.floor(durationInFrames * 0.88));
 
 	const opacity = interpolate(frame, [0, fadeInEnd, fadeOutStart, durationInFrames], [0, 1, 1, 0], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',
 	});
 
+	// Slide-up animation
+	const slideUp = interpolate(frame, [0, fadeInEnd], [20, 0], {
+		extrapolateLeft: 'clamp',
+		extrapolateRight: 'clamp',
+	});
+
+	// Text scale pulse for emphasis
+	const textScale = expression === 'shocked'
+		? 1 + Math.sin(frame * 0.3) * 0.02
+		: expression === 'happy'
+			? 1 + Math.sin(frame * 0.2) * 0.01
+			: 1;
+
+	const speakerColors = speaker ? getSubtitleColors(normalizeCharacterName(speaker)) : undefined;
+
 	return (
 		<div
 			style={{
 				position: 'absolute',
-				bottom: 90,
+				bottom: 80,
 				width: '100%',
-				textAlign: 'center',
-				fontSize: 44,
-				fontFamily: 'Arial, Helvetica, sans-serif',
-				fontWeight: 'bold',
-				color: 'white',
-				textShadow: '3px 3px 6px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)',
-				padding: '0 60px',
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
 				opacity,
-				lineHeight: 1.3,
+				transform: `translateY(${slideUp}px)`,
 				zIndex: 100,
 			}}
 		>
-			{audioFile && (
-				<Audio src={staticFile(audioFile.startsWith('audio/') ? audioFile : `audio/${audioFile}`)} />
-			)}
+			{/* Speaker name badge */}
 			{speaker && (
-				<span
+				<div
 					style={{
-						color: '#FFD700',
-						marginRight: 10,
-						fontSize: 36,
-						backgroundColor: 'rgba(0,0,0,0.4)',
-						padding: '2px 12px',
-						borderRadius: 8,
+						padding: '4px 18px',
+						marginBottom: 8,
+						backgroundColor: speakerColors?.bg || 'rgba(0,0,0,0.7)',
+						borderRadius: '20px 20px 4px 4px',
+						fontSize: 22,
+						fontWeight: 'bold',
+						fontFamily: 'Arial, Helvetica, sans-serif',
+						color: speakerColors?.text || '#fff',
+						textAlign: 'center',
+						letterSpacing: 0.5,
 					}}
 				>
 					{speaker}
-				</span>
+				</div>
 			)}
-			{text}
+
+			{/* Speech bubble */}
+			<div
+				style={{
+					padding: '14px 32px',
+					maxWidth: '80%',
+					backgroundColor: 'rgba(0, 0, 0, 0.75)',
+					borderRadius: 16,
+					fontSize: 42,
+					fontFamily: 'Arial, Helvetica, sans-serif',
+					fontWeight: 'bold',
+					color: '#fff',
+					textAlign: 'center',
+					lineHeight: 1.4,
+					boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+					border: speakerColors ? `2px solid ${speakerColors.accent}44` : '2px solid rgba(255,255,255,0.1)',
+					transform: `scale(${textScale})`,
+					backdropFilter: 'blur(2px)',
+				}}
+			>
+				{text}
+			</div>
 		</div>
 	);
 };

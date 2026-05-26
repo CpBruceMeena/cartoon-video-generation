@@ -32,31 +32,66 @@ PIPELINE_TIMEOUT_SECONDS = 600
 
 # ─── Character Voice Profiles ───────────────────────────────────────────────
 #
-# Profile IDs come from the live Voicebox instance. To see yours:
-#   curl http://127.0.0.1:17493/profiles
+# Profile IDs live in the shared registry JSON (frontend/src/characters/registry.json)
+# which is the single source of truth for all character metadata.
 #
-# The TTS engine (kokoro / qwen-tts / etc.) is tied to the profile in Voicebox,
-# NOT sent in the API payload. Create new profiles to switch engines.
+# To see your Voicebox profiles:
+#   curl http://127.0.0.1:17493/profiles
+
+REGISTRY_PATH = FRONTEND_DIR / "src" / "characters" / "registry.json"
+
+
+def _load_character_registry() -> dict:
+    """Load the shared character registry JSON (single source of truth)."""
+    import json
+    if REGISTRY_PATH.exists():
+        with open(REGISTRY_PATH) as f:
+            data = json.load(f)
+        return data.get("characters", {})
+    print(f"  ⚠️  Registry not found at {REGISTRY_PATH}")
+    return {}
+
+
+CHARACTER_REGISTRY = _load_character_registry()
+
+
+def get_voice_profile_id(character_name: str) -> str | None:
+    """Get the Voicebox profile ID for a character from the shared registry."""
+    key = character_name.lower().replace(" ", "").replace("-", "")
+    entry = CHARACTER_REGISTRY.get(key, {})
+    pid = entry.get("voiceProfileId", "")
+    return pid if pid else None
+
+
+def get_character_personality(character_name: str) -> str | None:
+    """Get the personality prompt for a character from the shared registry."""
+    key = character_name.lower().replace(" ", "").replace("-", "")
+    entry = CHARACTER_REGISTRY.get(key, {})
+    return entry.get("personality") or None
+
+
+def get_known_characters() -> set:
+    """Get the set of known character names from the registry."""
+    return set(CHARACTER_REGISTRY.keys())
+
+
+# ─── Backward-compatible constants ──────────────────────────────────────────
 
 VOICE_MAP: dict[str, dict] = {
-    "shinchan":  {"profile_id": "30140e32-8286-40af-b899-d2941f1f97eb"},
-    "doraemon":  {"profile_id": "4b5958cb-1bef-4a99-97bc-12463e798c04"},
-    "nobita":    {"profile_id": "b1407014-9e3f-4a49-8b86-fcf9bec0fee2"},
-    "misae":     {"profile_id": "cfc98b74-d3c2-419a-a253-80f224c4c116"},
-    "shiro":     {},
-    "chibifox":  {},
-    "dog":       {},
-    "rayne":     {},
-    "schoolgirl": {},
-    "scientist": {},
-    "villain":   {},
+    name: {"profile_id": info["voiceProfileId"]}
+    for name, info in CHARACTER_REGISTRY.items()
+    if info.get("voiceProfileId")
 }
 
-KNOWN_CHARACTERS = {
-    "shinchan", "doraemon", "nobita", "misae", "shiro",
-    "chibifox", "chibi fox", "dog", "rayne",
-    "schoolgirl", "scientist", "villain",
-}
+KNOWN_CHARACTERS = get_known_characters() | {"chibi"}  # "chibi" is an alias for "chibifox"
+
+# Add multi-word aliases
+_extra_aliases = set()
+for name in CHARACTER_REGISTRY:
+    display = CHARACTER_REGISTRY[name].get("displayName", "")
+    if display and " " in display:
+        _extra_aliases.add(display.lower())
+KNOWN_CHARACTERS |= _extra_aliases
 
 # ─── Script Parsing Settings ────────────────────────────────────────────────
 

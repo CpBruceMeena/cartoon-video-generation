@@ -2,102 +2,157 @@ import React from 'react';
 
 interface Props {
 	expression?: 'normal' | 'happy' | 'angry' | 'shocked';
+	isSpeaking?: boolean;
+	speakingFrame?: number;
 }
 
-export const ScientistSVG: React.FC<Props> = ({ expression = 'normal' }) => {
-	const mouthPath = expression === 'happy'
-		? 'M75 128 Q95 148 115 128'
-		: expression === 'angry'
-			? 'M75 122 Q95 112 115 122'
-			: expression === 'shocked'
-				? 'M85 118 Q95 138 105 118'
-				: 'M78 126 Q95 140 112 126';
+export const ScientistSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
+	const mouthOpen = isSpeaking ? Math.abs(Math.sin(speakingFrame * 0.32 * Math.PI * 2)) : 0;
+	const mouthOpenAmount = mouthOpen * 8;
+
+	const blinkCycle = speakingFrame % 100;
+	const isBlinking = blinkCycle > 94 && blinkCycle < 98;
+	const blinkH = isBlinking ? 1.5 : expression === 'shocked' ? 10 : 7;
+
+	const getMouthPath = () => {
+		if (isSpeaking) {
+			const baseY = 130 + mouthOpenAmount;
+			switch (expression) {
+				case 'happy': return `M74 128 Q95 ${baseY + 12} 116 128`;
+				case 'angry': return `M74 122 Q95 ${baseY - 8} 116 122`;
+				case 'shocked': return `M82 118 Q95 ${baseY + 2} 108 118`;
+				default: return `M76 126 Q95 ${baseY + 8} 114 126`;
+			}
+		}
+		switch (expression) {
+			case 'happy': return 'M74 128 Q95 150 116 128';
+			case 'angry': return 'M74 122 Q95 112 116 122';
+			case 'shocked': return 'M82 118 Q95 136 108 118';
+			default: return 'M76 126 Q95 142 114 126';
+		}
+	};
+
+	const mouthFill = (isSpeaking && mouthOpen > 0.3) ? '#1A1A1A' : 'none';
 
 	return (
 		<svg width="270" height="370" viewBox="0 0 200 280">
-			{/* Lab coat */}
-			<rect x="55" y="110" width="90" height="75" rx="6" fill="white" stroke="#ddd" strokeWidth="2" />
-			{/* Coat lapels */}
-			<path d="M70 110 L95 140 L120 110" fill="#F5F5F5" stroke="#ddd" strokeWidth="1" />
-			{/* Coat buttons */}
-			<circle cx="100" cy="150" r="3" fill="#ddd" />
-			<circle cx="100" cy="165" r="3" fill="#ddd" />
-			{/* Pocket */}
-			<rect x="125" y="155" width="14" height="12" rx="2" fill="none" stroke="#ddd" strokeWidth="1.5" />
-			{/* Pen in pocket */}
-			<rect x="129" y="148" width="2" height="10" rx="1" fill="#1565C0" />
-			<rect x="132" y="150" width="2" height="8" rx="1" fill="#E53935" />
+			<defs>
+				<radialGradient id="sci-skin" cx="50%" cy="40%" r="60%">
+					<stop offset="0%" stopColor="#FFE082" />
+					<stop offset="70%" stopColor="#FFCC80" />
+					<stop offset="100%" stopColor="#F4A460" />
+				</radialGradient>
+				<linearGradient id="sci-coat" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="#FFFFFF" />
+					<stop offset="100%" stopColor="#F5F5F5" />
+				</linearGradient>
+				<linearGradient id="sci-pants" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="#546E7A" />
+					<stop offset="100%" stopColor="#455A64" />
+				</linearGradient>
+				<filter id="sci-shadow">
+					<feDropShadow dx="0" dy="3" stdDeviation="2" floodColor="#000" floodOpacity="0.12" />
+				</filter>
+			</defs>
 
-			{/* Shirt under */}
-			<rect x="62" y="115" width="12" height="8" rx="2" fill="#E3F2FD" />
-			<rect x="126" y="115" width="12" height="8" rx="2" fill="#E3F2FD" />
+			<g filter="url(#sci-shadow)">
+				{/* === LEGS & SHOES === */}
+				<rect x="62" y="230" width="34" height="40" rx="5" fill="url(#sci-pants)" stroke="#37474F" strokeWidth="1.5" />
+				<rect x="104" y="230" width="34" height="40" rx="5" fill="url(#sci-pants)" stroke="#37474F" strokeWidth="1.5" />
+				<ellipse cx="79" cy="270" rx="16" ry="7" fill="#37474F" stroke="#263238" strokeWidth="2" />
+				<ellipse cx="121" cy="270" rx="16" ry="7" fill="#37474F" stroke="#263238" strokeWidth="2" />
 
-			{/* Tie */}
-			<rect x="95" y="120" width="10" height="30" rx="2" fill="#E53935" stroke="#B71C1C" strokeWidth="1" />
+				{/* === BODY - LAB COAT === */}
+				<rect x="52" y="108" width="96" height="128" rx="8" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="2" />
+				{/* Coat lapels */}
+				<path d="M68 108 L100 140 L132 108" fill="#FAFAFA" stroke="#E0E0E0" strokeWidth="1" />
+				{/* Buttons */}
+				<circle cx="100" cy="155" r="3.5" fill="#E0E0E0" stroke="#BDBDBD" strokeWidth="0.5" />
+				<circle cx="100" cy="172" r="3.5" fill="#E0E0E0" stroke="#BDBDBD" strokeWidth="0.5" />
+				{/* Pocket */}
+				<rect x="130" y="160" width="16" height="14" rx="2" fill="none" stroke="#E0E0E0" strokeWidth="1.5" />
+				{/* Pens in pocket */}
+				<rect x="134" y="152" width="2.5" height="10" rx="1" fill="#1E88E5" />
+				<rect x="138" y="154" width="2.5" height="8" rx="1" fill="#E53935" />
+				{/* Shirt collar hint */}
+				<rect x="72" y="112" width="8" height="6" rx="2" fill="#E3F2FD" />
+				<rect x="120" y="112" width="8" height="6" rx="2" fill="#E3F2FD" />
+				{/* Tie */}
+				<rect x="96" y="118" width="8" height="32" rx="2" fill="#E53935" stroke="#B71C1C" strokeWidth="1" />
 
-			{/* Pants */}
-			<rect x="58" y="185" width="35" height="50" rx="4" fill="#455A64" stroke="#37474F" strokeWidth="2" />
-			<rect x="107" y="185" width="35" height="50" rx="4" fill="#455A64" stroke="#37474F" strokeWidth="2" />
+				{/* === ARMS === */}
+				<rect x="30" y="116" width="22" height="15" rx="7" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="1.5" />
+				<rect x="148" y="116" width="22" height="15" rx="7" fill="url(#sci-coat)" stroke="#E0E0E0" strokeWidth="1.5" />
+				<circle cx="30" cy="123" r="9" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				<circle cx="170" cy="123" r="9" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 
-			{/* Shoes */}
-			<ellipse cx="75" cy="238" rx="14" ry="6" fill="#37474F" stroke="#263238" strokeWidth="2" />
-			<ellipse cx="125" cy="238" rx="14" ry="6" fill="#37474F" stroke="#263238" strokeWidth="2" />
+				{/* === HEAD === */}
+				<ellipse cx="100" cy="68" rx="46" ry="52" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="2" />
 
-			{/* Arms */}
-			<rect x="33" y="118" width="22" height="14" rx="7" fill="white" stroke="#ddd" strokeWidth="1.5" />
-			<rect x="145" y="118" width="22" height="14" rx="7" fill="white" stroke="#ddd" strokeWidth="1.5" />
-			{/* Hands */}
-			<circle cx="33" cy="125" r="8" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="1.5" />
-			<circle cx="167" cy="125" r="8" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="1.5" />
+				{/* === EARS === */}
+				<ellipse cx="54" cy="70" rx="7" ry="11" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
+				<ellipse cx="146" cy="70" rx="7" ry="11" fill="url(#sci-skin)" stroke="#DBA56E" strokeWidth="1.5" />
 
-			{/* Head */}
-			<ellipse cx="100" cy="70" rx="44" ry="50" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="2" />
+				{/* === HAIR - messy grey/white === */}
+				<path d="M52 50 Q55 18 74 15 Q85 8 100 10 Q115 8 126 15 Q145 18 148 50" fill="#BDBDBD" />
+				<path d="M52 50 Q48 60 46 75" fill="#BDBDBD" />
+				<path d="M148 50 Q152 60 154 75" fill="#BDBDBD" />
+				{/* Hair tufts (mad scientist) */}
+				<path d="M72 15 Q66 4 76 8" fill="#BDBDBD" />
+				<path d="M128 15 Q134 4 124 8" fill="#BDBDBD" />
+				{/* Hair highlight */}
+				<path d="M78 26 Q90 20 110 22" fill="none" stroke="#D6D6D6" strokeWidth="2" opacity="0.4" />
 
-			{/* Hair - messy grey/white */}
-			<path d="M56 55 Q58 22 75 20 Q85 14 100 16 Q115 14 125 20 Q142 22 144 55" fill="#BDBDBD" stroke="none" />
-			<path d="M56 55 Q50 65 48 80" fill="#BDBDBD" stroke="none" />
-			<path d="M144 55 Q150 65 152 80" fill="#BDBDBD" stroke="none" />
-			{/* Hair tufts (mad scientist) */}
-			<path d="M70 20 Q65 8 75 10" fill="#BDBDBD" />
-			<path d="M130 20 Q135 8 125 10" fill="#BDBDBD" />
+				{/* === GLASSES === */}
+				<circle cx="76" cy="70" r="18" fill="none" stroke="#607D8B" strokeWidth="2.5" />
+				<circle cx="124" cy="70" r="18" fill="none" stroke="#607D8B" strokeWidth="2.5" />
+				<line x1="94" y1="68" x2="106" y2="68" stroke="#607D8B" strokeWidth="2" />
+				<path d="M66 64 Q70 60 74 62" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+				<path d="M114 64 Q118 60 122 62" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
 
-			{/* Glasses - round */}
-			<circle cx="78" cy="70" r="16" fill="none" stroke="#546E7A" strokeWidth="2.5" />
-			<circle cx="122" cy="70" r="16" fill="none" stroke="#546E7A" strokeWidth="2.5" />
-			<line x1="94" y1="68" x2="106" y2="68" stroke="#546E7A" strokeWidth="2" />
-			{/* Glass shine */}
-			<path d="M68 64 Q72 60 76 62" fill="none" stroke="white" strokeWidth="1" opacity="0.5" />
-			<path d="M112 64 Q116 60 120 62" fill="none" stroke="white" strokeWidth="1" opacity="0.5" />
+				{/* === EYES (behind glasses) === */}
+				<ellipse cx="76" cy="70" rx={6} ry={blinkH} fill="white" stroke="#444" strokeWidth="1" />
+				<ellipse cx="124" cy="70" rx={6} ry={blinkH} fill="white" stroke="#444" strokeWidth="1" />
 
-			{/* Eyes (behind glasses) */}
-			<ellipse cx="78" cy="70" rx="4" ry="5" fill="#1A1A1A" />
-			<ellipse cx="122" cy="70" rx="4" ry="5" fill="#1A1A1A" />
-			<circle cx="80" cy="68" r="1.5" fill="white" />
-			<circle cx="124" cy="68" r="1.5" fill="white" />
+				{!isBlinking && (
+					<>
+						<circle cx="78" cy="71" r="4" fill="#1A1A1A" />
+						<circle cx="126" cy="71" r="4" fill="#1A1A1A" />
+						<circle cx="80" cy="68" r="2" fill="white" />
+						<circle cx="128" cy="68" r="2" fill="white" />
+					</>
+				)}
 
-			{/* Eyebrows - bushy */}
-			<path d="M60 50 Q78 44 94 50" fill="none" stroke="#757575" strokeWidth="3" strokeLinecap="round" />
-			<path d="M106 50 Q122 44 140 50" fill="none" stroke="#757575" strokeWidth="3" strokeLinecap="round" />
-			{/* Angry eyebrows */}
-			{expression === 'angry' && (
-				<>
-					<path d="M60 46 Q78 40 94 50" fill="none" stroke="#757575" strokeWidth="3.5" strokeLinecap="round" />
-					<path d="M106 50 Q122 40 140 46" fill="none" stroke="#757575" strokeWidth="3.5" strokeLinecap="round" />
-				</>
-			)}
+				{/* === EYEBROWS - BUSHY === */}
+				<path d="M58 48 Q76 40 94 48" fill="none" stroke="#757575" strokeWidth="3" strokeLinecap="round" />
+				<path d="M106 48 Q124 40 142 48" fill="none" stroke="#757575" strokeWidth="3" strokeLinecap="round" />
 
-			{/* Nose */}
-			<ellipse cx="100" cy="88" rx="4" ry="3" fill="#E8945E" />
+				{/* Angry brows */}
+				{expression === 'angry' && (
+					<>
+						<path d="M56 44 Q76 38 94 48" fill="none" stroke="#757575" strokeWidth="3.5" strokeLinecap="round" />
+						<path d="M106 48 Q124 38 144 44" fill="none" stroke="#757575" strokeWidth="3.5" strokeLinecap="round" />
+					</>
+				)}
 
-			{/* Mustache */}
-			<path d="M80 95 Q90 92 100 95 Q110 92 120 95" fill="none" stroke="#757575" strokeWidth="2" strokeLinecap="round" />
+				{/* === NOSE === */}
+				<ellipse cx="100" cy="88" rx="4" ry="3.5" fill="#E8945E" />
 
-			{/* Mouth */}
-			<path d={mouthPath} fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" />
+				{/* === MUSTACHE === */}
+				<path d="M78 95 Q90 90 100 94 Q110 90 122 95" fill="none" stroke="#757575" strokeWidth="2.5" strokeLinecap="round" />
 
-			{/* Ears */}
-			<ellipse cx="56" cy="72" rx="6" ry="10" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="1.5" />
-			<ellipse cx="144" cy="72" rx="6" ry="10" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="1.5" />
+				{/* === MOUTH === */}
+				<path d={getMouthPath()} fill={mouthFill} stroke="#333" strokeWidth="2" strokeLinecap="round" />
+
+				{/* === EXPRESSION DETAILS === */}
+				{expression === 'happy' && (
+					<ellipse cx="56" cy="95" rx="8" ry="5" fill="#FF8A80" opacity="0.3" />
+				)}
+
+				{expression === 'shocked' && (
+					<path d="M150 42 Q154 52 150 58 Q146 52 150 42" fill="#64B5F6" />
+				)}
+			</g>
 		</svg>
 	);
 };

@@ -1,65 +1,88 @@
 import React from 'react';
-import { ShinchanSVG } from '../characters/Shinchan';
-import { DoraemonSVG } from '../characters/Doraemon';
-import { NobitaSVG } from '../characters/Nobita';
-import { MisaeSVG } from '../characters/Misae';
-import { ShiroSVG } from '../characters/Shiro';
-import { ChibiFoxSVG } from '../characters/ChibiFox';
-import { DogSVG } from '../characters/Dog';
-import { RayneSVG } from '../characters/Rayne';
-import { SchoolgirlSVG } from '../characters/Schoolgirl';
-import { ScientistSVG } from '../characters/Scientist';
-import { VillainSVG } from '../characters/Villain';
-
-type Expression = 'normal' | 'happy' | 'angry' | 'shocked';
+import { getCharacterSvg, getCharacterColor, getCharacterDisplayName, normalizeCharacterName, isKnownCharacter, type Expression } from '../characters/registry';
 
 interface CharacterProps {
 	type: string;
 	style?: React.CSSProperties;
 	expression?: Expression;
+	isSpeaking?: boolean;
+	/** Scene-relative frame */
+	sceneFrame?: number;
+	/** Frame within scene when this character started speaking (scene-relative) */
+	speakingStartFrame?: number;
 }
 
-const characterSvgMap: Record<string, React.FC<{ expression?: Expression }>> = {
-	shinchan: ShinchanSVG,
-	doraemon: DoraemonSVG,
-	nobita: NobitaSVG,
-	misae: MisaeSVG,
-	shiro: ShiroSVG,
-	chibifox: ChibiFoxSVG,
-	chibi: ChibiFoxSVG,
-	dog: DogSVG,
-	rayne: RayneSVG,
-	schoolgirl: SchoolgirlSVG,
-	scientist: ScientistSVG,
-	villain: VillainSVG,
-};
+export const Character: React.FC<CharacterProps> = ({
+	type,
+	style,
+	expression = 'normal',
+	isSpeaking = false,
+	sceneFrame = 0,
+	speakingStartFrame = 0,
+}) => {
+	const normalized = normalizeCharacterName(type);
+	const SvgComponent = getCharacterSvg(normalized);
+	const accentColor = getCharacterColor(normalized);
+	const displayName = getCharacterDisplayName(normalized);
+	const svgRef = React.useRef<HTMLDivElement>(null);
 
-const normalizeName = (name: string): string => {
-	return name.toLowerCase().replace(/[^a-z0-9]/g, '');
-};
+	// Speaking animation: sinusoidal bob and subtle scale oscillation
+	const speakingProgress = isSpeaking ? Math.max(0, sceneFrame - speakingStartFrame) : 0;
 
-const characterLabels: Record<string, string> = {
-	shinchan: 'Shinchan',
-	doraemon: 'Doraemon',
-	nobita: 'Nobita',
-	misae: 'Misae',
-	shiro: 'Shiro',
-	chibifox: 'Chibi Fox',
-	chibi: 'Chibi Fox',
-	dog: 'Dog',
-	rayne: 'Rayne',
-	schoolgirl: 'Schoolgirl',
-	scientist: 'Scientist',
-	villain: 'Villain',
-};
+	let translateY = 0;
+	let scale = 1;
+	let rotate = 0;
+	let filter = 'none';
 
-export const Character: React.FC<CharacterProps> = ({ type, style, expression = 'normal' }) => {
-	const normalized = normalizeName(type);
-	const SvgComponent = characterSvgMap[normalized];
+	if (isSpeaking && speakingProgress >= 0) {
+		// Speaking bob: more pronounced body movement when talking
+		const bobAmplitude = 6;
+		const bobSpeed = 0.3;
+		const bob = Math.sin(speakingProgress * bobSpeed * Math.PI * 2) * bobAmplitude;
+		translateY = bob;
 
-	// Speaking bounce animation
-	const bounceY = expression === 'happy' ? -8 : expression === 'angry' ? 4 : 0;
-	const scale = expression === 'happy' ? 1.05 : expression === 'shocked' ? 1.08 : 1;
+		// Scale pulse to simulate breathing while talking
+		const breathPulse = 1 + Math.sin(speakingProgress * 0.12) * 0.025;
+		scale = breathPulse;
+
+		// Head wobble / body sway
+		rotate = Math.sin(speakingProgress * 0.18) * 2.5;
+	} else {
+		// Idle animation: gentle breathing sway
+		const idleSway = Math.sin(sceneFrame * 0.04) * 2;
+		translateY = idleSway;
+		scale = 1;
+		rotate = Math.sin(sceneFrame * 0.025) * 0.8;
+	}
+
+	// Expression-based visual effects
+	switch (expression) {
+		case 'happy':
+			scale *= 1.04;
+			filter = 'brightness(1.05) saturate(1.1)';
+			break;
+		case 'shocked':
+			scale *= 1.08;
+			filter = 'brightness(1.1) contrast(1.08) saturate(1.15)';
+			break;
+		case 'angry':
+			scale *= 0.95;
+			filter = 'saturate(1.3) hue-rotate(-8deg) brightness(0.95)';
+			break;
+	}
+
+	// Entrance animation: slide up from bottom with bounce
+	const entranceDuration = 14;
+	let entranceOffset = 0;
+	if (sceneFrame < entranceDuration) {
+		const t = sceneFrame / entranceDuration;
+		// Ease-out bounce effect
+		const eased = 1 - Math.pow(1 - t, 3);
+		const bounce = Math.sin(t * Math.PI * 3) * (1 - t) * 8;
+		entranceOffset = (1 - eased) * 70 + bounce;
+	}
+
+	const transform = `translateX(-50%) translateY(${translateY + entranceOffset}px) scale(${scale}) rotate(${rotate}deg)`;
 
 	return (
 		<div
@@ -69,47 +92,88 @@ export const Character: React.FC<CharacterProps> = ({ type, style, expression = 
 				display: 'flex',
 				flexDirection: 'column' as const,
 				alignItems: 'center' as const,
-				transform: `translateX(-50%) translateY(${bounceY}px) scale(${scale})`,
-				transition: 'transform 0.15s ease-out',
-				filter: expression === 'shocked' ? 'brightness(1.1) contrast(1.1)' : 'none',
+				transform,
+				filter,
+				transition: 'filter 0.2s ease',
 			}}
+			ref={svgRef}
 		>
-			{SvgComponent ? (
-				<SvgComponent expression={expression} />
-			) : (
+			{/* Speaking glow ring */}
+			{isSpeaking && (
 				<div
 					style={{
-						width: 150,
-						height: 180,
-						backgroundColor: '#ddd',
-						border: '3px dashed #666',
-						borderRadius: 15,
-						display: 'flex',
-						justifyContent: 'center',
-						alignItems: 'center',
-						flexDirection: 'column',
-						fontFamily: 'sans-serif',
+						position: 'absolute',
+						bottom: 30,
+						width: 220,
+						height: 40,
+						background: `radial-gradient(ellipse, ${accentColor}33 0%, transparent 70%)`,
+						borderRadius: '50%',
+						opacity: 0.6,
+						pointerEvents: 'none',
 					}}
-				>
-					<span style={{ fontSize: 40 }}>👤</span>
-					<span style={{ fontSize: 14, fontWeight: 'bold', color: '#333', marginTop: 10 }}>{type}</span>
-				</div>
+				/>
 			)}
-			{/* Character name label */}
+
+			{/* Speaking indicator pulse */}
+			{isSpeaking && (
+				<div
+					style={{
+						position: 'absolute',
+						top: -10,
+						width: 12,
+						height: 12,
+						borderRadius: '50%',
+						backgroundColor: accentColor,
+						opacity: 0.5 + Math.sin(sceneFrame * 0.3) * 0.3,
+						boxShadow: `0 0 8px ${accentColor}`,
+					}}
+				/>
+			)}
+
+			{/* Character SVG */}
+			<div style={{ position: 'relative' }}>
+				{SvgComponent ? (
+					<SvgComponent expression={expression} isSpeaking={isSpeaking} speakingFrame={speakingProgress} />
+				) : (
+					<div
+						style={{
+							width: 150,
+							height: 180,
+							backgroundColor: '#ddd',
+							border: '3px dashed #666',
+							borderRadius: 15,
+							display: 'flex',
+							justifyContent: 'center',
+							alignItems: 'center',
+							flexDirection: 'column',
+							fontFamily: 'sans-serif',
+						}}
+					>
+						<span style={{ fontSize: 40 }}>👤</span>
+						<span style={{ fontSize: 14, fontWeight: 'bold', color: '#333', marginTop: 10 }}>
+							{isKnownCharacter(normalized) ? displayName : type}
+						</span>
+					</div>
+				)}
+			</div>
+
+			{/* Character name label with accent color */}
 			<div
 				style={{
 					marginTop: 6,
 					padding: '4px 14px',
-					backgroundColor: 'rgba(0,0,0,0.6)',
+					backgroundColor: accentColor,
 					borderRadius: 12,
-					fontSize: 16,
+					fontSize: 15,
 					fontWeight: 'bold',
 					fontFamily: 'Arial, sans-serif',
 					color: '#fff',
 					textAlign: 'center',
+					boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+					opacity: isSpeaking ? 1 : 0.75,
 				}}
 			>
-				{characterLabels[normalized] || type}
+				{isKnownCharacter(normalized) ? displayName : type}
 			</div>
 		</div>
 	);

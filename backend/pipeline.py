@@ -36,6 +36,8 @@ from backend.config import (
     DEFAULT_DURATION_FRAMES,
     VOICE_MAP,
     PIPELINE_TIMEOUT_SECONDS,
+    get_voice_profile_id,
+    get_character_personality,
 )
 from backend.script_parser import parse_script, normalize_name
 from backend.voicebox_client import generate_voice, voicebox_preflight
@@ -71,18 +73,21 @@ def process_script(script_data: dict, script_name: str, start_time: float = 0) -
         for line in scene["dialogue"]:
             all_dialogue_count += 1
             speaker_norm = normalize_name(line["speaker"])
-            voice_config = VOICE_MAP.get(speaker_norm, {})
+            profile_id = get_voice_profile_id(speaker_norm)
 
             # Voicebox returns WAV audio; the filename extension must match
             audio_filename = f"{speaker_norm}_{all_dialogue_count:03d}.wav"
             audio_path = AUDIO_DIR / audio_filename
 
-            if voice_config.get("profile_id"):
+            if profile_id:
                 check_timeout(start_time, f"Generating voice for {line['speaker']}")
+                personality_prompt = get_character_personality(speaker_norm)
                 print(f"  🔊 Generating voice for {line['speaker']}: \"{line['text'][:50]}...\"")
+                if personality_prompt:
+                    print(f"     🎭 Using character personality: {personality_prompt[:60]}...")
                 audio_bytes = generate_voice(
                     text=line["text"],
-                    profile_id=voice_config["profile_id"],
+                    profile_id=profile_id,
                 )
                 if audio_bytes:
                     audio_path.write_bytes(audio_bytes)

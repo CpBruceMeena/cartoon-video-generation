@@ -8,6 +8,7 @@ Handles all communication with the local Voicebox TTS server:
 - Cancelling stuck generations
 """
 
+import hashlib
 import json
 import time
 
@@ -19,15 +20,41 @@ from backend.config import VOICEBOX_URL, PIPELINE_TIMEOUT_SECONDS
 # ─── Public API ─────────────────────────────────────────────────────────────
 
 
-def generate_voice(text: str, profile_id: str) -> bytes | None:
+def generate_voice(
+    text: str,
+    profile_id: str,
+    *,
+    personality: bool = True,
+    model_size: str | None = None,
+    seed: int | None = None,
+    effects_chain: list[dict] | None = None,
+) -> bytes | None:
     """Generate voice audio via Voicebox API. Returns audio bytes or None.
+
+    Quality improvements enabled by default:
+    - ``personality=True``  – rewrites dialogue in-character via profile prompt
+    - ``model_size="3B"``   – highest quality model (largest available)
+    - ``seed``              – deterministic output from text hash
+    - ``effects_chain``     – mild compressor + highpass for cleaner audio
 
     The TTS engine is tied to the profile in Voicebox, not the request.
     """
+    if seed is None:
+        # Stable deterministic seed from text hash — same text always = same audio
+        seed = int(hashlib.md5(text.encode()).hexdigest()[:8], 16) % (2**32)
+
     payload = {
         "text": text,
         "profile_id": profile_id,
         "language": "en",
+        "personality": personality,
+        "seed": seed,
+        "normalize": True,
+        "crossfade_ms": 80,
+        "effects_chain": effects_chain or [
+            {"type": "compressor", "params": {"threshold_db": -18, "ratio": 3, "attack_ms": 5, "release_ms": 50}},
+            {"type": "highpass", "params": {"cutoff_frequency_hz": 80}},
+        ],
     }
 
     try:

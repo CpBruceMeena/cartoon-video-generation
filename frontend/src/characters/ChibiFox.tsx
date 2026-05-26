@@ -2,80 +2,119 @@ import React from 'react';
 
 interface Props {
 	expression?: 'normal' | 'happy' | 'angry' | 'shocked';
+	isSpeaking?: boolean;
+	speakingFrame?: number;
 }
 
-export const ChibiFoxSVG: React.FC<Props> = ({ expression = 'normal' }) => {
-	const tailWag = expression === 'happy' ? 'rotate(-10)' : 'rotate(0)';
-	const mouthPath = expression === 'happy'
-		? 'M48 58 Q56 66 64 58'
-		: expression === 'angry'
-			? 'M48 56 Q56 50 64 56'
-			: expression === 'shocked'
-				? 'M52 54 Q56 62 60 54'
-				: 'M48 56 Q56 62 64 56';
+export const ChibiFoxSVG: React.FC<Props> = ({ expression = 'normal', isSpeaking = false, speakingFrame = 0 }) => {
+	const mouthOpen = isSpeaking ? Math.abs(Math.sin(speakingFrame * 0.3 * Math.PI * 2)) : 0;
+	const tailWag = expression === 'happy' ? 'rotate(-25)' : isSpeaking ? 'rotate(-12)' : 'rotate(0)';
+
+	const blinkCycle = speakingFrame % 85;
+	const isBlinking = blinkCycle > 80 && blinkCycle < 84;
+
+	const getMouthPath = () => {
+		if (isSpeaking) {
+			const open = 2 + mouthOpen * 6;
+			return `M47 56 Q56 ${62 + open} 65 56`;
+		}
+		switch (expression) {
+			case 'happy': return 'M47 56 Q56 66 65 56';
+			case 'angry': return 'M47 54 Q56 48 65 54';
+			case 'shocked': return 'M51 52 Q56 62 61 52';
+			default: return 'M47 54 Q56 62 65 54';
+		}
+	};
+
+	const mouthFill = (isSpeaking && mouthOpen > 0.3) ? '#1A1A1A' : 'none';
 
 	return (
 		<svg width="200" height="240" viewBox="0 0 120 140">
-			{/* Tail */}
-			<path d="M75 85 Q100 60 105 50 Q108 45 100 50 Q90 60 78 80" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5"
-				transform={tailWag} />
-			<path d="M100 50 Q108 45 105 52" fill="white" stroke="none" />
+			<defs>
+				<radialGradient id="fox-body" cx="50%" cy="40%" r="65%">
+					<stop offset="0%" stopColor="#FF8A65" />
+					<stop offset="70%" stopColor="#F4511E" />
+					<stop offset="100%" stopColor="#D84315" />
+				</radialGradient>
+				<linearGradient id="fox-belly" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stopColor="#FFF3E0" />
+					<stop offset="100%" stopColor="#FFE0B2" />
+				</linearGradient>
+				<linearGradient id="fox-tail" x1="0" y1="0" x2="1" y2="0">
+					<stop offset="40%" stopColor="#FF8A65" />
+					<stop offset="100%" stopColor="#FFFFFF" />
+				</linearGradient>
+				<filter id="fox-shadow">
+					<feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.12" />
+				</filter>
+			</defs>
 
-			{/* Body */}
-			<ellipse cx="60" cy="90" rx="28" ry="22" fill="#FF8A65" stroke="#E64A19" strokeWidth="2" />
-			{/* Belly */}
-			<ellipse cx="60" cy="93" rx="18" ry="14" fill="#FFF3E0" stroke="none" />
+			<g filter="url(#fox-shadow)">
+				{/* === TAIL === */}
+				<path d="M74 86 Q104 56 108 44 Q110 38 102 44 Q92 56 80 78" fill="url(#fox-tail)" stroke="#D84315" strokeWidth="1.5"
+					transform={tailWag} />
+				<path d="M102 44 Q110 38 106 48" fill="white" />
 
-			{/* Legs */}
-			<rect x="42" y="105" width="10" height="18" rx="4" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5" />
-			<rect x="68" y="105" width="10" height="18" rx="4" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5" />
-			<ellipse cx="47" cy="123" rx="7" ry="3" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="1" />
-			<ellipse cx="73" cy="123" rx="7" ry="3" fill="#FFCC80" stroke="#BF8A5E" strokeWidth="1" />
+				{/* === BODY === */}
+				<ellipse cx="60" cy="92" rx="30" ry="24" fill="url(#fox-body)" stroke="#D84315" strokeWidth="2" />
+				<ellipse cx="60" cy="96" rx="20" ry="16" fill="url(#fox-belly)" />
 
-			{/* Arms */}
-			<ellipse cx="30" cy="88" rx="10" ry="6" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5" />
-			<ellipse cx="90" cy="88" rx="10" ry="6" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5" />
+				{/* === LEGS === */}
+				<rect x="42" y="108" width="10" height="18" rx="4" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1.5" />
+				<rect x="68" y="108" width="10" height="18" rx="4" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1.5" />
+				<ellipse cx="47" cy="126" rx="8" ry="3.5" fill="#FFCC80" stroke="#DBA56E" strokeWidth="1" />
+				<ellipse cx="73" cy="126" rx="8" ry="3.5" fill="#FFCC80" stroke="#DBA56E" strokeWidth="1" />
 
-			{/* Head */}
-			<circle cx="60" cy="50" r="30" fill="#FF8A65" stroke="#E64A19" strokeWidth="2" />
+				{/* === ARMS/PAWS === */}
+				<ellipse cx="28" cy="90" rx="12" ry="7" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1.5" />
+				<ellipse cx="92" cy="90" rx="12" ry="7" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1.5" />
 
-			{/* Ears - large triangular */}
-			<path d="M35 38 L28 12 L48 32" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5" />
-			<path d="M85 38 L92 12 L72 32" fill="#FF8A65" stroke="#E64A19" strokeWidth="1.5" />
-			{/* Inner ear */}
-			<path d="M37 36 L32 18 L46 33" fill="#FFCC80" stroke="none" />
-			<path d="M83 36 L88 18 L74 33" fill="#FFCC80" stroke="none" />
+				{/* === HEAD === */}
+				<circle cx="60" cy="52" r="32" fill="url(#fox-body)" stroke="#D84315" strokeWidth="2" />
 
-			{/* Cheek fur tufts */}
-			<path d="M32 48 L24 50 L32 54" fill="#FF8A65" stroke="#E64A19" strokeWidth="1" />
-			<path d="M88 48 L96 50 L88 54" fill="#FF8A65" stroke="#E64A19" strokeWidth="1" />
+				{/* === EARS - large triangular === */}
+				<path d="M33 36 L24 8 L50 30" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1.5" />
+				<path d="M87 36 L96 8 L70 30" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1.5" />
+				<path d="M35 34 L28 14 L48 31" fill="#FFCC80" />
+				<path d="M85 34 L92 14 L72 31" fill="#FFCC80" />
 
-			{/* White face mask */}
-			<ellipse cx="60" cy="54" rx="18" ry="16" fill="white" stroke="#ddd" strokeWidth="1" />
+				{/* === CHEEK FUR === */}
+				<path d="M30 48 L20 50 L30 54" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1" />
+				<path d="M90 48 L100 50 L90 54" fill="url(#fox-body)" stroke="#D84315" strokeWidth="1" />
 
-			{/* Eyes */}
-			<ellipse cx="50" cy="50" rx="5" ry="6" fill="#1A1A1A" />
-			<ellipse cx="70" cy="50" rx="5" ry="6" fill="#1A1A1A" />
-			<circle cx="52" cy="48" r="2" fill="white" />
-			<circle cx="72" cy="48" r="2" fill="white" />
+				{/* === WHITE FACE MASK === */}
+				<ellipse cx="60" cy="56" rx="20" ry="18" fill="white" stroke="#E0E0E0" strokeWidth="1" />
 
-			{/* Eyebrows */}
-			<path d="M42 42 Q50 38 56 42" fill="none" stroke="#BF360C" strokeWidth="1.5" strokeLinecap="round" />
-			<path d="M64 42 Q70 38 78 42" fill="none" stroke="#BF360C" strokeWidth="1.5" strokeLinecap="round" />
+				{/* === EYES === */}
+				<ellipse cx="50" cy="52" rx={5.5} ry={isBlinking ? 1 : 6} fill="#1A1A1A" />
+				<ellipse cx="70" cy="52" rx={5.5} ry={isBlinking ? 1 : 6} fill="#1A1A1A" />
+				{!isBlinking && (
+					<>
+						<circle cx="52" cy="50" r="2.5" fill="white" />
+						<circle cx="72" cy="50" r="2.5" fill="white" />
+						<circle cx="49" cy="54" r="1" fill="white" opacity="0.5" />
+					</>
+				)}
 
-			{/* Nose */}
-			<ellipse cx="60" cy="58" rx="3" ry="2" fill="#333" />
+				{/* === EYEBROWS === */}
+				<path d="M40 42 Q50 38 56 42" fill="none" stroke="#BF360C" strokeWidth="2" strokeLinecap="round" />
+				<path d="M64 42 Q70 38 80 42" fill="none" stroke="#BF360C" strokeWidth="2" strokeLinecap="round" />
 
-			{/* Mouth */}
-			<path d={mouthPath} fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round" />
+				{/* === NOSE === */}
+				<ellipse cx="60" cy="60" rx="4" ry="3" fill="#333" />
+				<ellipse cx="59" cy="59" rx="1.5" ry="0.8" fill="#666" />
 
-			{/* Cheek blush */}
-			{expression === 'happy' && (
-				<>
-					<ellipse cx="38" cy="54" rx="5" ry="3" fill="#FFAB91" opacity="0.5" />
-					<ellipse cx="82" cy="54" rx="5" ry="3" fill="#FFAB91" opacity="0.5" />
-				</>
-			)}
+				{/* === MOUTH === */}
+				<path d={getMouthPath()} fill={mouthFill} stroke="#333" strokeWidth="1.5" strokeLinecap="round" />
+
+				{/* === CHEEK BLUSH === */}
+				{expression === 'happy' && (
+					<>
+						<ellipse cx="36" cy="56" rx="6" ry="4" fill="#FF8A80" opacity="0.4" />
+						<ellipse cx="84" cy="56" rx="6" ry="4" fill="#FF8A80" opacity="0.4" />
+					</>
+				)}
+			</g>
 		</svg>
 	);
 };
