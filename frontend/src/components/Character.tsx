@@ -112,13 +112,25 @@ export const Character: React.FC<CharacterProps> = ({
 			break;
 	}
 
-	// ── Spring-based entrance animation ────────────────────────────────
+	// ── Spring-based entrance animation with overshoot bounce ──────────
 	const entranceSpring = spring({
 		frame: Math.min(sceneFrame, 25),
 		fps,
-		config: { damping: 12, stiffness: 90, mass: 0.7 },
+		config: { damping: 12, stiffness: 200, mass: 0.5 }, // overshoot bounce
 	});
 	const entranceOffset = interpolate(entranceSpring, [0, 1], [100, 0]);
+
+	// ── Squash & stretch on entrance landing ───────────────────────────
+	// Creates a brief elastic squash in Y (volume-preserving stretch in X)
+	// at the moment the entrance lands (~frame 12-18)
+	const squashFrame = Math.min(sceneFrame, 30);
+	const squash = interpolate(
+		squashFrame,
+		[12, 15, 20],
+		[1, 0.93, 1],
+		{ extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: (t) => 1 - Math.pow(1 - t, 3) },
+	);
+	const stretchX = 1 / squash;
 
 	// Subtle idle dim when not speaking
 	const idleOpacity = isSpeaking
@@ -134,7 +146,8 @@ export const Character: React.FC<CharacterProps> = ({
 	const transform = `
 		translateX(-50%)
 		translateY(${translateY + entranceOffset}px)
-		scale(${scale})
+		scaleX(${scale * stretchX})
+		scaleY(${scale * squash})
 		rotate(${rotate}deg)
 	`;
 

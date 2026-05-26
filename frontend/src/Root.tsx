@@ -45,7 +45,7 @@ export const RemotionRoot: React.FC = () => {
 		<Composition
 			id="DynamicVideo"
 			component={DynamicMovie}
-			durationInFrames={Math.max(1, totalWithTransitions)}
+			durationInFrames={Math.max(1, 330)}
 			fps={FPS}
 			width={1920}
 			height={1080}
@@ -224,6 +224,7 @@ const LightingOverlay: React.FC<{
 const CAMERA_ZOOM_INTENSITY = 0.04;
 const CAMERA_PAN_INTENSITY = 40;
 const CAMERA_PUSH_INTENSITY = 0.03;
+const CAMERA_SHAKE_INTENSITY = 3;
 
 // ── DynamicScene: Per-scene content with camera movement ─────────────────
 
@@ -287,9 +288,25 @@ const DynamicScene: React.FC<{
 	const pushIn = expressiveness * CAMERA_PUSH_INTENSITY;
 	const cameraZoom = 1 + (activeLine ? CAMERA_ZOOM_INTENSITY : 0) + pushIn;
 
+	// ── Impact shake on punchline (Doraemon's shocking realization ~frame 164) ──
+	const shockStart = 164 - scene.startFrame;
+	const shakeActive = frame >= shockStart && frame < shockStart + 8;
+	const shakeX = shakeActive
+		? Math.sin(frame * 50) * CAMERA_SHAKE_INTENSITY
+		: 0;
+	const shakeY = shakeActive
+		? Math.cos(frame * 40) * CAMERA_SHAKE_INTENSITY * 0.6
+		: 0;
+
+	// ── Push-in on final punchline (Shinchan's chocolate demand ~frame 200) ──
+	const finalPushStart = 200 - scene.startFrame;
+	const finalPushProgress = Math.max(0, Math.min(1, (frame - finalPushStart) / 40));
+	const finalPushScale = 1 + finalPushProgress * 0.02;
+
 	const cameraTransform = `
-		translateX(${(targetPan * cameraPanSpring).toFixed(1)}px)
-		scale(${cameraZoom.toFixed(4)})
+		translateX(${((targetPan * cameraPanSpring) + shakeX).toFixed(1)}px)
+		translateY(${shakeY.toFixed(1)}px)
+		scale(${(cameraZoom * finalPushScale).toFixed(4)})
 	`;
 
 	return (
