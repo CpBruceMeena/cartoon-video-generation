@@ -8,6 +8,7 @@ import {
 	type CharacterSVGProps,
 } from './useCharacterAnimation';
 import { CHARACTER_ANIMATION_CONFIGS } from './animationConfig';
+import { useExpressionMorph } from './useExpressionMorph';
 
 const cfg = CHARACTER_ANIMATION_CONFIGS.shinchan!;
 
@@ -40,9 +41,7 @@ const EXPR_CONFIG: Record<string, { browAngle: number; browAngleR: number; browY
 	thinking: { browAngle: 8, browAngleR: -4, browY: -2, eyeSquint: 0.85 },
 	sad:      { browAngle: 6, browAngleR: 4, browY: 1, eyeSquint: 0.85 },
 	listening:{ browAngle: 0, browAngleR: 0, browY: 0, eyeSquint: 1 },
-};
-
-export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
+};	export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 	expression = 'normal',
 	isSpeaking = false,
 	speakingFrame = 0,
@@ -72,19 +71,42 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 
 	const legBounce = useLegBounce(isSpeaking, speakingFrame, cfg.legBounce);
 
-	// ── Expression-derived body silhouette ────────────────────────────────
-	const silhouette = (BODY_SILHOUETTES[expression] ?? BODY_SILHOUETTES.normal)!;
-	const { browAngle, browAngleR, browY, eyeSquint } = (EXPR_CONFIG[expression] ?? EXPR_CONFIG.normal)!;
+	// ── EXPRESSION MORPHING ──────────────────────────────────────────────
+	// Smooth spring-based interpolation between expression states.
+	// Eyebrows, eyes, and body silhouette blend smoothly when expression changes.
+	const exprMorph = useExpressionMorph(expression, speakingFrame, EXPR_CONFIG);
+	const bodyMorph = useExpressionMorph(expression, speakingFrame, BODY_SILHOUETTES);
+
+	// Extract morphed values
+	const browAngle = exprMorph.browAngle;
+	const browAngleR = exprMorph.browAngleR;
+	const browY = exprMorph.browY;
+	const eyeSquint = exprMorph.eyeSquint;
+	const silhouette = bodyMorph;
+	const armLeanAdjustment = silhouette.lean * 0.4;
 
 	// ── Hair animation ────────────────────────────────────────────────────
 	const hairSway = isSpeaking ? Math.sin(speakingFrame * 0.15) * 2 : 0;
 	const hairSway2 = isSpeaking ? Math.sin(speakingFrame * 0.12 + 1.5) * 1.5 : 0;
 
-	// ── Expression-specific animations ────────────────────────────────────
-	const blushOpacity = expression === 'happy' || expression === 'laughing'
-		? 0.35 + Math.sin(speakingFrame * 0.2) * 0.12
-		: 0;
+	// ── Expression-specific brush opacity (morphs smoothly for blush fade) ──
+	const blushOpacity = useExpressionMorph(expression, speakingFrame, {
+		normal: { v: 0 },
+		happy: { v: 0.4 },
+		laughing: { v: 0.5 },
+		angry: { v: 0 },
+		shocked: { v: 0 },
+		thinking: { v: 0 },
+		sad: { v: 0 },
+		listening: { v: 0 },
+	}).v;
 
+	// Add sin oscillation on top for liveliness
+	const blushPulse = blushOpacity * (isSpeaking
+		? 1 + Math.sin(speakingFrame * 0.2) * 0.25
+		: 1);
+
+	// Sweat drops and effects still snap instantly (they're binary on/off effects)
 	const sweatDropY1 = expression === 'shocked' ? 60 + (speakingFrame % 40) * 0.4 : 60;
 	const sweatDropY2 = expression === 'shocked' ? 52 + ((speakingFrame + 20) % 40) * 0.35 : 52;
 
@@ -121,10 +143,17 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 	const SW = 3;
 
 	// ── Eye height offsets ────────────────────────────────────────────────
-	const eyeOffsetY = expression === 'happy' ? -3 : expression === 'angry' ? 3 : expression === 'shocked' ? -2 : 0;
-
-	// ── Extra arm offset from body lean ───────────────────────────────────
-	const armLeanAdjustment = silhouette.lean * 0.4;
+	// Eye height offset now also morphs smoothly
+	const eyeOffsetY = useExpressionMorph(expression, speakingFrame, {
+		normal: { v: 0 },
+		happy: { v: -3 },
+		laughing: { v: -3 },
+		angry: { v: 3 },
+		shocked: { v: -2 },
+		thinking: { v: 0 },
+		sad: { v: 1 },
+		listening: { v: 0 },
+	}).v;
 
 	// ── Body posture transform ────────────────────────────────────────────
 	// Apply lean, squash from silhouette
@@ -275,12 +304,9 @@ export const ShinchanSVG: React.FC<CharacterSVGProps> = ({
 					)}
 
 					{/* === CHEEK BLUSH (when happy/laughing) === */}
-					{(expression === 'happy' || expression === 'laughing') && (
-						<>
-							<ellipse cx='50' cy='100' rx='15' ry='9' fill='#FF8A80' opacity={blushOpacity} />
-							<ellipse cx='150' cy='100' rx='15' ry='9' fill='#FF8A80' opacity={blushOpacity} />
-						</>
-					)}
+				{/* Blush with smooth morphing opacity — visible during and just after happy/laughing */}
+					<ellipse cx='50' cy='100' rx='15' ry='9' fill='#FF8A80' opacity={blushPulse} />
+					<ellipse cx='150' cy='100' rx='15' ry='9' fill='#FF8A80' opacity={blushPulse} />
 
 					{/* === ANGRY EFFECTS — forehead veins + furrowed intensity === */}
 					{expression === 'angry' && (

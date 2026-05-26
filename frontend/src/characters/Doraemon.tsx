@@ -6,6 +6,7 @@ import {
 	type CharacterSVGProps,
 } from './useCharacterAnimation';
 import { CHARACTER_ANIMATION_CONFIGS } from './animationConfig';
+import { useExpressionMorph, useExpressionMorphValue } from './useExpressionMorph';
 
 const cfg = CHARACTER_ANIMATION_CONFIGS.doraemon!;
 
@@ -29,9 +30,7 @@ const EXPR_CONFIG: Record<string, {
 const BODY_LEAN: Record<string, number> = {
 	normal: 0, happy: -2, laughing: -4, angry: 4,
 	shocked: -6, thinking: 2, sad: -3, listening: 1,
-};
-
-export const DoraemonSVG: React.FC<CharacterSVGProps> = ({
+};	export const DoraemonSVG: React.FC<CharacterSVGProps> = ({
 	expression = 'normal',
 	isSpeaking = false,
 	speakingFrame = 0,
@@ -43,13 +42,24 @@ export const DoraemonSVG: React.FC<CharacterSVGProps> = ({
 		cfg.mouth,
 	);
 
-	// Doraemon uses scale-based eye animation
-	const exprCfg = (EXPR_CONFIG[expression] ?? EXPR_CONFIG.normal)!;
+	// ── EXPRESSION MORPHING ──────────────────────────────────────────────
+	// Smooth spring-based interpolation between expression states
+	const exprMorph = useExpressionMorph(expression, speakingFrame, EXPR_CONFIG);
+	const bodyLean = useExpressionMorphValue(expression, speakingFrame, BODY_LEAN);
+
+	// Head tilt also morphs smoothly
+	const headTilt = useExpressionMorphValue(expression, speakingFrame, {
+		normal: 0, happy: 4, laughing: 4, angry: -3,
+		shocked: 0, thinking: 1, sad: -1, listening: 0,
+	});
+
+	// Doraemon uses scale-based eye animation with morphed eyeWiden
+	const morphEyeWiden = exprMorph.eyeWiden;
 	const blinkCycle = speakingFrame % cfg.eyeBlink.cycleLength;
 	const isBlinking = blinkCycle > cfg.eyeBlink.cycleLength - 7 && blinkCycle < cfg.eyeBlink.cycleLength - 1;
 
 	// Eye widen/squish from expression config (applied on top of blink)
-	const eyeScaleWiden = isBlinking ? 0.08 : exprCfg.eyeWiden;
+	const eyeScaleWiden = isBlinking ? 0.08 : morphEyeWiden;
 	const showPupils = !isBlinking;
 
 	// Ear wiggle
@@ -60,10 +70,6 @@ export const DoraemonSVG: React.FC<CharacterSVGProps> = ({
 
 	// Bell swing
 	const bellSwing = isSpeaking ? Math.sin(speakingFrame * 0.12) * 4 : Math.sin(speakingFrame * 0.03) * 2;
-
-	// Head tilt
-	const bodyLean = BODY_LEAN[expression] ?? 0;
-	const headTilt = expression === 'happy' ? 4 : expression === 'angry' ? -3 : expression === 'shocked' ? 0 : 0;
 
 	const { leftArmAngle, rightArmAngle } = useArmAnimation(
 		isSpeaking,
@@ -253,17 +259,14 @@ export const DoraemonSVG: React.FC<CharacterSVGProps> = ({
 						</>
 					)}
 
-					{/* Eyebrow lines above eyes (subtle, Doraemon-style) */}
-					{expression !== 'normal' && (
-						<>
-							<g transform={`rotate(${exprCfg.browAngle}, 74, 40)`}>
-								<line x1='60' y1='40' x2='88' y2='40' stroke='#1565C0' strokeWidth='3.5' strokeLinecap='round' />
-							</g>
-							<g transform={`rotate(${exprCfg.browAngleR}, 126, 40)`}>
-								<line x1='112' y1='40' x2='140' y2='40' stroke='#1565C0' strokeWidth='3.5' strokeLinecap='round' />
-							</g>
-						</>
-					)}
+					{/* Eyebrow lines above eyes (subtle, Doraemon-style) — now with smooth morphing */}
+					{/* Show with any opacity when morphing away from normal, or fully when expression !== normal */}
+					<g transform={`rotate(${exprMorph.browAngle}, 74, 40)`}>
+						<line x1='60' y1='40' x2='88' y2='40' stroke='#1565C0' strokeWidth='3.5' strokeLinecap='round' />
+					</g>
+					<g transform={`rotate(${exprMorph.browAngleR}, 126, 40)`}>
+						<line x1='112' y1='40' x2='140' y2='40' stroke='#1565C0' strokeWidth='3.5' strokeLinecap='round' />
+					</g>
 
 					{/* Nose — red circle with shine */}
 					<circle cx='100' cy='78' rx='10' ry='9' fill='#E53935' stroke={STROKE_NOSE} strokeWidth='2' />
