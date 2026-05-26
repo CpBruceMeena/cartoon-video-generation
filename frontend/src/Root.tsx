@@ -347,6 +347,9 @@ const DynamicScene: React.FC<{
 						leftPercent = 20 + (60 / (numSpeakers - 1)) * index;
 					}
 
+					// Characters face each other: left → right, right → left
+					const isLeftSide = index === 0;
+
 					return (
 						<Character
 							key={speaker}
@@ -360,6 +363,7 @@ const DynamicScene: React.FC<{
 									? activeLine.startFrame - scene.startFrame
 									: 0
 							}
+							facing={isLeftSide ? 1 : -1}
 							style={{
 								bottom: 140,
 								left: `${leftPercent}%`,

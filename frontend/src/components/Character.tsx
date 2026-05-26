@@ -13,6 +13,8 @@ interface CharacterProps {
 	sceneFrame?: number;
 	/** Frame within scene when this character started speaking (scene-relative) */
 	speakingStartFrame?: number;
+	/** Facing direction: 1 = right (default), -1 = left (mirrored) */
+	facing?: 1 | -1;
 }
 
 /**
@@ -27,6 +29,7 @@ export const Character: React.FC<CharacterProps> = ({
 	isSpeaking = false,
 	sceneFrame = 0,
 	speakingStartFrame = 0,
+	facing = 1,
 }) => {
 	const normalized = normalizeCharacterName(type);
 	const SvgComponent = getCharacterSvg(normalized);
@@ -146,7 +149,7 @@ export const Character: React.FC<CharacterProps> = ({
 	const transform = `
 		translateX(-50%)
 		translateY(${translateY + entranceOffset}px)
-		scaleX(${scale * stretchX})
+		scaleX(${scale * stretchX * facing})
 		scaleY(${scale * squash})
 		rotate(${rotate}deg)
 	`;
